@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人レッスン予約フォーム - 新潟卓球ラボ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gradient-to-br from-orange-50 to-blue-50 min-h-screen">
+    <!-- ヘッダー -->
+    <header class="bg-gradient-to-r from-orange-500 to-blue-600 text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-table-tennis text-4xl animate-spin-slow"></i>
+                    <div>
+                        <h1 class="text-3xl font-bold">個人レッスン予約フォーム</h1>
+                        <p class="text-orange-100 text-sm">新潟卓球ラボ</p>
+                    </div>
+                </div>
+                <a href="index.html" class="border-2 border-white px-6 py-2 rounded-full font-bold hover:bg-white hover:text-blue-600 transition">
+                    ← トップへ
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-12 max-w-4xl">
+        <!-- 検索方法選択 -->
+        <section id="searchMethodSection" class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">どちらから探しますか？</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <button onclick="selectSearchMethod('facility')" class="search-method-btn bg-gradient-to-br from-blue-500 to-blue-600 text-white p-8 rounded-xl hover:shadow-xl transform hover:scale-105 transition">
+                    <i class="fas fa-building text-5xl mb-4"></i>
+                    <h3 class="text-2xl font-bold mb-2">📍 施設から探す</h3>
+                    <p class="text-blue-100">行きたい施設を選んでから<br>空いている日時を確認</p>
+                </button>
+                <button onclick="selectSearchMethod('datetime')" class="search-method-btn bg-gradient-to-br from-orange-500 to-orange-600 text-white p-8 rounded-xl hover:shadow-xl transform hover:scale-105 transition">
+                    <i class="fas fa-calendar-alt text-5xl mb-4"></i>
+                    <h3 class="text-2xl font-bold mb-2">📅 日時から探す</h3>
+                    <p class="text-orange-100">希望の日時を選んでから<br>対応可能な施設を表示</p>
+                </button>
+            </div>
+        </section>
+
+        <!-- 予約フォーム -->
+        <section id="bookingFormSection" class="bg-white rounded-2xl shadow-xl p-8 hidden">
+            <div class="mb-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-800">予約フォーム</h2>
+                <button onclick="resetForm()" class="text-blue-600 hover:text-blue-800 font-bold">
+                    <i class="fas fa-undo mr-2"></i>最初から
+                </button>
+            </div>
+
+            <!-- ステップインジケーター -->
+            <div class="mb-8">
+                <div class="flex justify-between">
+                    <div class="step-indicator active" id="step1">
+                        <div class="step-number">1</div>
+                        <p class="step-label">基本情報</p>
+                    </div>
+                    <div class="step-indicator" id="step2">
+                        <div class="step-number">2</div>
+                        <p class="step-label">施設・日時</p>
+                    </div>
+                    <div class="step-indicator" id="step3">
+                        <div class="step-number">3</div>
+                        <p class="step-label">詳細</p>
+                    </div>
+                    <div class="step-indicator" id="step4">
+                        <div class="step-number">4</div>
+                        <p class="step-label">確認</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="bookingForm">
+                <!-- ステップ1: 基本情報 -->
+                <div id="formStep1" class="form-step">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-gray-700 font-bold mb-2">お名前 <span class="text-red-500">*</span></label>
+                            <input type="text" id="customerName" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-bold mb-2">区分 <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <label class="radio-card">
+                                    <input type="radio" name="customerType" value="junior" required class="hidden">
+                                    <div class="radio-card-content">
+                                        <i class="fas fa-child text-3xl text-orange-500 mb-2"></i>
+                                        <p class="font-bold">ジュニア</p>
+                                        <p class="text-sm text-gray-600">中学生以下</p>
+                                    </div>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="customerType" value="adult" required class="hidden">
+                                    <div class="radio-card-content">
+                                        <i class="fas fa-user-tie text-3xl text-blue-500 mb-2"></i>
+                                        <p class="font-bold">社会人</p>
+                                        <p class="text-sm text-gray-600">高校生以上</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-bold mb-2">レッスン種別 <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <label class="radio-card">
+                                    <input type="radio" name="lessonType" value="individual" required class="hidden">
+                                    <div class="radio-card-content">
+                                        <i class="fas fa-user text-3xl text-blue-500 mb-2"></i>
+                                        <p class="font-bold">個人レッスン</p>
+                                        <p class="text-sm text-gray-600">1〜4名</p>
+                                    </div>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="lessonType" value="group" required class="hidden">
+                                    <div class="radio-card-content">
+                                        <i class="fas fa-users text-3xl text-orange-500 mb-2"></i>
+                                        <p class="font-bold">グループレッスン</p>
+                                        <p class="text-sm text-gray-600">講習会</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex justify-end">
+                        <button type="button" onclick="nextStep()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+                            次へ <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ステップ2: 施設・日時（動的に変わる） -->
+                <div id="formStep2" class="form-step hidden">
+                    <div id="facilityFirstFlow" class="hidden">
+                        <!-- 施設優先フロー -->
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">施設を選択 <span class="text-red-500">*</span></label>
+                                <select id="facilitySelect" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                                    <option value="">施設を選択してください</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">日時を選択 <span class="text-red-500">*</span></label>
+                                <input type="date" id="bookingDate1" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                                <select id="bookingTime1" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none mt-4">
+                                    <option value="">時間を選択してください</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="datetimeFirstFlow" class="hidden">
+                        <!-- 日時優先フロー -->
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">希望日を選択 <span class="text-red-500">*</span></label>
+                                <input type="date" id="bookingDate2" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">希望開始時間 <span class="text-red-500">*</span></label>
+                                <select id="bookingTime2" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                                    <option value="">時間を選択してください</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">レッスン時間 <span class="text-red-500">*</span></label>
+                                <select id="duration" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                                    <option value="60">1時間</option>
+                                    <option value="90">1.5時間</option>
+                                    <option value="120">2時間</option>
+                                    <option value="150">2.5時間</option>
+                                    <option value="180">3時間</option>
+                                </select>
+                            </div>
+                            <div id="availableFacilities" class="hidden">
+                                <label class="block text-gray-700 font-bold mb-2">対応可能な施設 <span class="text-red-500">*</span></label>
+                                <div id="facilityList" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-between">
+                        <button type="button" onclick="prevStep()" class="bg-gray-300 text-gray-700 px-8 py-3 rounded-lg font-bold hover:bg-gray-400 transition">
+                            <i class="fas fa-arrow-left mr-2"></i> 戻る
+                        </button>
+                        <button type="button" onclick="nextStep()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+                            次へ <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ステップ3: 詳細 -->
+                <div id="formStep3" class="form-step hidden">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-gray-700 font-bold mb-2">参加人数 <span class="text-red-500">*</span></label>
+                            <select id="participants" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                                <option value="1">1名</option>
+                                <option value="2">2名</option>
+                                <option value="3">3名</option>
+                                <option value="4">4名</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-bold mb-2">施設予約の担当 <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <label class="radio-card">
+                                    <input type="radio" name="facilityBookingBy" value="customer" required class="hidden">
+                                    <div class="radio-card-content">
+                                        <i class="fas fa-user-check text-3xl text-green-500 mb-2"></i>
+                                        <p class="font-bold">自分で予約する</p>
+                                        <p class="text-sm text-gray-600">施設は自分で予約済み</p>
+                                    </div>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="facilityBookingBy" value="coach" required class="hidden">
+                                    <div class="radio-card-content">
+                                        <i class="fas fa-hands-helping text-3xl text-blue-500 mb-2"></i>
+                                        <p class="font-bold">コーチにお願い</p>
+                                        <p class="text-sm text-gray-600">コーチが施設を予約</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-bold mb-2">備考（任意）</label>
+                            <textarea id="notes" rows="4" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="何かあればご記入ください"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex justify-between">
+                        <button type="button" onclick="prevStep()" class="bg-gray-300 text-gray-700 px-8 py-3 rounded-lg font-bold hover:bg-gray-400 transition">
+                            <i class="fas fa-arrow-left mr-2"></i> 戻る
+                        </button>
+                        <button type="button" onclick="nextStep()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+                            次へ <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ステップ4: 確認 -->
+                <div id="formStep4" class="form-step hidden">
+                    <div class="space-y-6">
+                        <div class="bg-blue-50 p-6 rounded-lg">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">予約内容の確認</h3>
+                            <div id="confirmationDetails" class="space-y-2 text-gray-700"></div>
+                        </div>
+                        <div class="bg-gradient-to-r from-orange-100 to-blue-100 p-6 rounded-lg">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-2">💰 コーチ料金</h3>
+                            <p id="priceDisplay" class="text-4xl font-bold text-blue-600"></p>
+                            <p class="text-sm text-gray-600 mt-2">※施設利用料は当日ご確認ください</p>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex justify-between">
+                        <button type="button" onclick="prevStep()" class="bg-gray-300 text-gray-700 px-8 py-3 rounded-lg font-bold hover:bg-gray-400 transition">
+                            <i class="fas fa-arrow-left mr-2"></i> 戻る
+                        </button>
+                        <button type="submit" class="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-12 py-3 rounded-lg font-bold hover:shadow-lg transition">
+                            予約申請を送信 <i class="fas fa-paper-plane ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="fixed bottom-8 right-8 bg-green-500 text-white px-6 py-4 rounded-lg shadow-xl hidden">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-check-circle text-2xl"></i>
+            <p id="toastMessage" class="font-bold"></p>
+        </div>
+    </div>
+
+    <script>
+        // Supabase初期化
+        const SUPABASE_URL = 'https://lwbysesbbehholrojonc.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_1AAl8h9MGibfa5hQle5MYw_zZJTp-7X';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+    <script src="js/pricing.js"></script>
+    <script src="js/booking.js"></script>
+
+    <style>
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 3s linear infinite;
+        }
+        .radio-card {
+            cursor: pointer;
+        }
+        .radio-card input:checked + .radio-card-content {
+            @apply border-4 border-blue-500 bg-blue-50;
+        }
+        .radio-card-content {
+            @apply border-2 border-gray-300 p-6 rounded-xl text-center hover:border-blue-300 transition;
+        }
+        .step-indicator {
+            @apply flex flex-col items-center flex-1;
+        }
+        .step-number {
+            @apply w-12 h-12 rounded-full bg-gray-300 text-white font-bold flex items-center justify-center mb-2;
+        }
+        .step-indicator.active .step-number {
+            @apply bg-blue-600;
+        }
+        .step-label {
+            @apply text-sm text-gray-600 font-bold;
+        }
+    </style>
+</body>
+</html>

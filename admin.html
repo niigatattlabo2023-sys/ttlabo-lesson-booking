@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理画面 - 個人レッスン予約システム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gradient-to-br from-orange-50 to-blue-50 min-h-screen">
+    <!-- ヘッダー -->
+    <header class="bg-gradient-to-r from-orange-500 to-blue-600 text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-table-tennis text-4xl animate-spin-slow"></i>
+                    <div>
+                        <h1 class="text-3xl font-bold">管理画面</h1>
+                        <p class="text-orange-100 text-sm">個人レッスン予約システム</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="adminName" class="font-bold"></span>
+                    <button onclick="logout()" class="bg-white text-blue-600 px-6 py-2 rounded-full font-bold hover:bg-orange-100 transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ログインフォーム -->
+    <div id="loginSection" class="container mx-auto px-4 py-12 max-w-md">
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fas fa-lock text-blue-600 mr-2"></i>ログイン
+            </h2>
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">メールアドレス</label>
+                    <input type="email" id="loginEmail" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">パスワード</label>
+                    <input type="password" id="loginPassword" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-blue-600 text-white py-3 rounded-lg font-bold hover:shadow-lg transition">
+                    ログイン <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <main id="mainContent" class="container mx-auto px-4 py-12 hidden">
+        <!-- ダッシュボード -->
+        <section class="mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="stat-card">
+                    <i class="fas fa-clock text-4xl text-yellow-500 mb-3"></i>
+                    <p class="text-gray-600 mb-2">新着申請</p>
+                    <p class="stat-number" id="pendingCount">0</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
+                    <p class="text-gray-600 mb-2">今月の承認</p>
+                    <p class="stat-number" id="approvedCount">0</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-yen-sign text-4xl text-blue-500 mb-3"></i>
+                    <p class="text-gray-600 mb-2">今月の売上</p>
+                    <p class="stat-number" id="monthlyRevenue">¥0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- タブナビゲーション -->
+        <section class="mb-8">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="flex border-b">
+                    <button onclick="switchTab('requests')" class="tab-btn active flex-1 py-4 px-6 font-bold">
+                        <i class="fas fa-inbox mr-2"></i>予約申請
+                    </button>
+                    <button onclick="switchTab('calendar')" class="tab-btn flex-1 py-4 px-6 font-bold">
+                        <i class="fas fa-calendar-alt mr-2"></i>カレンダー
+                    </button>
+                    <button onclick="switchTab('facilities')" class="tab-btn flex-1 py-4 px-6 font-bold">
+                        <i class="fas fa-building mr-2"></i>施設管理
+                    </button>
+                </div>
+
+                <!-- 予約申請タブ -->
+                <div id="requestsTab" class="tab-content p-8">
+                    <div class="mb-6 flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-gray-800">予約申請一覧</h2>
+                        <button onclick="refreshRequests()" class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-sync-alt mr-2"></i>更新
+                        </button>
+                    </div>
+                    <div id="requestsList" class="space-y-4"></div>
+                </div>
+
+                <!-- カレンダータブ -->
+                <div id="calendarTab" class="tab-content p-8 hidden">
+                    <div class="mb-6 flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-gray-800">予定管理</h2>
+                        <button onclick="showAddEventModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition">
+                            <i class="fas fa-plus mr-2"></i>予定を追加
+                        </button>
+                    </div>
+                    <div id="calendarView"></div>
+                </div>
+
+                <!-- 施設管理タブ -->
+                <div id="facilitiesTab" class="tab-content p-8 hidden">
+                    <div class="mb-6 flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-gray-800">施設マスタ</h2>
+                        <button onclick="showAddFacilityModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition">
+                            <i class="fas fa-plus mr-2"></i>施設を追加
+                        </button>
+                    </div>
+                    <div id="facilitiesList" class="space-y-4"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 予約詳細モーダル -->
+    <div id="requestDetailModal" class="modal">
+        <div class="modal-content max-w-3xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">予約詳細</h3>
+                <button onclick="closeModal('requestDetailModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="requestDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="fixed bottom-8 right-8 bg-green-500 text-white px-6 py-4 rounded-lg shadow-xl hidden">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-check-circle text-2xl"></i>
+            <p id="toastMessage" class="font-bold"></p>
+        </div>
+    </div>
+
+    <script>
+        // Supabase初期化
+        const SUPABASE_URL = 'https://lwbysesbbehholrojonc.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_1AAl8h9MGibfa5hQle5MYw_zZJTp-7X';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+    <script src="js/pricing.js"></script>
+    <script src="js/admin.js"></script>
+
+    <style>
+        .tab-btn {
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab-btn:hover {
+            color: #004E89;
+            background-color: #f3f4f6;
+        }
+        .tab-btn.active {
+            color: #004E89;
+            border-bottom-color: #004E89;
+            background-color: #eff6ff;
+        }
+    </style>
+</body>
+</html>
