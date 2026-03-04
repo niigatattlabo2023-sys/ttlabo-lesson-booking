@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人レッスン予約フォーム - 新潟卓球ラボ</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .pattern-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .pattern-btn {
+            flex: 1;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .pattern-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .pattern-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .pattern-btn i {
+            font-size: 2em;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .form-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .time-slot {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .time-slot:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .time-slot.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .time-slot.disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .facility-list {
+            display: grid;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .facility-card {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .facility-card:hover:not(.unavailable) {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .facility-card.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .facility-card.unavailable {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .facility-info h3 {
+            margin-bottom: 5px;
+            font-size: 1.1em;
+        }
+
+        .facility-info p {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .facility-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+        }
+
+        .facility-status.available {
+            color: #28a745;
+        }
+
+        .facility-status.unavailable {
+            color: #dc3545;
+        }
+
+        .price-display {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #667eea;
+        }
+
+        .price-display h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .price-row:last-child {
+            border-bottom: none;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .pattern-selector {
+                flex-direction: column;
+            }
+
+            .time-slots {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> トップページに戻る</a>
+        
+        <h1><i class="fas fa-calendar-check"></i> 個人レッスン予約フォーム</h1>
+        <p class="subtitle">ご希望の予約方法を選択してください</p>
+
+        <div id="messageArea"></div>
+
+        <div class="pattern-selector">
+            <div class="pattern-btn active" data-pattern="facility">
+                <i class="fas fa-building"></i>
+                <div><strong>施設から選ぶ</strong></div>
+                <small>施設を選んで空き時間を確認</small>
+            </div>
+            <div class="pattern-btn" data-pattern="datetime">
+                <i class="fas fa-clock"></i>
+                <div><strong>日時から選ぶ</strong></div>
+                <small>希望日時から対応可能な施設を確認</small>
+            </div>
+        </div>
+
+        <form id="bookingForm">
+            <!-- パターンA: 施設から選ぶ -->
+            <div id="facilityPattern" class="form-section active">
+                <div class="form-group">
+                    <label><i class="fas fa-building"></i> 希望施設</label>
+                    <select id="facilitySelect" required>
+                        <option value="">施設を選択してください</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="dateSelectGroup" style="display:none;">
+                    <label><i class="fas fa-calendar"></i> 希望日</label>
+                    <input type="date" id="facilityDate" required>
+                    <small style="color: #666; display: block; margin-top: 5px;">※月曜日は定休日です</small>
+                </div>
+
+                <div id="availableTimesArea"></div>
+            </div>
+
+            <!-- パターンB: 日時から選ぶ -->
+            <div id="datetimePattern" class="form-section">
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> 希望日</label>
+                    <input type="date" id="datetimeDate" required>
+                    <small style="color: #666; display: block; margin-top: 5px;">※月曜日は定休日です</small>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-clock"></i> 希望開始時刻</label>
+                    <select id="startTime" required>
+                        <option value="">時刻を選択してください</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-hourglass-half"></i> レッスン時間</label>
+                    <select id="duration" required>
+                        <option value="">時間を選択してください</option>
+                        <option value="60">1時間</option>
+                        <option value="90">1時間30分</option>
+                        <option value="120">2時間</option>
+                        <option value="150">2時間30分</option>
+                        <option value="180">3時間</option>
+                    </select>
+                </div>
+
+                <div id="availableFacilitiesArea"></div>
+            </div>
+
+            <!-- 共通フォーム項目 -->
+            <div id="commonFields" style="display:none;">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> お名前 <span style="color: red;">*</span></label>
+                    <input type="text" id="customerName" required placeholder="例: 山田太郎">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-users"></i> 区分 <span style="color: red;">*</span></label>
+                    <select id="customerType" required>
+                        <option value="">選択してください</option>
+                        <option value="junior">ジュニア（中学生以下）</option>
+                        <option value="adult">社会人（高校生以上）</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-clipboard-list"></i> レッスン種別 <span style="color: red;">*</span></label>
+                    <select id="lessonType" required>
+                        <option value="">選択してください</option>
+                        <option value="individual">個人レッスン</option>
+                        <option value="group">グループレッスン</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-user-friends"></i> 参加人数 <span style="color: red;">*</span></label>
+                    <select id="participants" required>
+                        <option value="">選択してください</option>
+                        <option value="1">1名</option>
+                        <option value="2">2名</option>
+                        <option value="3">3名</option>
+                        <option value="4">4名</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-building"></i> 施設予約担当 <span style="color: red;">*</span></label>
+                    <select id="facilityBookingBy" required>
+                        <option value="">選択してください</option>
+                        <option value="customer">自分で施設予約します</option>
+                        <option value="coach">コーチに施設予約をお願いします</option>
+                    </select>
+                </div>
+
+                <div id="priceDisplayArea"></div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-comment"></i> 備考・ご要望</label>
+                    <textarea id="notes" rows="3" placeholder="ご要望やご質問があればご記入ください"></textarea>
+                </div>
+
+                <div class="info-box">
+                    <strong><i class="fas fa-info-circle"></i> ご注意</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>施設利用料は当日お支払いください（施設・日により異なります）</li>
+                        <li>申請後、コーチから確定のご連絡をいたします</li>
+                        <li>月曜日は定休日です</li>
+                    </ul>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> 予約を申請する
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Supabase設定
+        const SUPABASE_URL = 'https://lwbysesbbehholrojonc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3YnlzZXNiYmVoaG9scm9qb25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0MjcxNjMsImV4cCI6MjA4ODAwMzE2M30.2NwutCuF7mODQ3bZUlDumn-wx2zHLWR_gP1tjHQuNqg';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Google Maps API設定
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyBM0HaVsfDpQtSqDiHI1cBo3hh-kG6UYpU';
+
+        let facilities = [];
+        let selectedFacility = null;
+        let selectedDateTime = null;
+        let selectedDuration = null;
+        let currentPattern = 'facility';
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadFacilities();
+            setupEventListeners();
+            setupTimeOptions();
+        });
+
+        // 施設データ読み込み
+        async function loadFacilities() {
+            try {
+                const { data, error } = await supabase
+                    .from('facilities')
+                    .select('*')
+                    .order('name');
+
+                if (error) throw error;
+
+                facilities = data || [];
+                updateFacilitySelect();
+            } catch (error) {
+                showMessage('施設データの読み込みに失敗しました: ' + error.message, 'error');
+            }
+        }
+
+        // 施設選択肢を更新
+        function updateFacilitySelect() {
+            const select = document.getElementById('facilitySelect');
+            select.innerHTML = '<option value="">施設を選択してください</option>';
+            
+            facilities.forEach(facility => {
+                const option = document.createElement('option');
+                option.value = facility.id;
+                option.textContent = facility.name;
+                select.appendChild(option);
+            });
+        }
+
+        // 時刻オプション設定
+        function setupTimeOptions() {
+            const startTimeSelect = document.getElementById('startTime');
+            for (let hour = 9; hour <= 20; hour++) {
+                for (let minute = 0; minute < 60; minute += 30) {
+                    const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    const option = document.createElement('option');
+                    option.value = time;
+                    option.textContent = time;
+                    startTimeSelect.appendChild(option);
+                }
+            }
+        }
+
+        // イベントリスナー設定
+        function setupEventListeners() {
+            // パターン切り替え
+            document.querySelectorAll('.pattern-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentPattern = btn.dataset.pattern;
+                    switchPattern(currentPattern);
+                });
+            });
+
+            // パターンA: 施設選択
+            document.getElementById('facilitySelect').addEventListener('change', (e) => {
+                const facilityId = e.target.value;
+                if (facilityId) {
+                    selectedFacility = facilities.find(f => f.id === facilityId);
+                    document.getElementById('dateSelectGroup').style.display = 'block';
+                } else {
+                    document.getElementById('dateSelectGroup').style.display = 'none';
+                    document.getElementById('availableTimesArea').innerHTML = '';
+                }
+            });
+
+            // パターンA: 日付選択
+            document.getElementById('facilityDate').addEventListener('change', async (e) => {
+                const date = e.target.value;
+                if (date && isMonday(date)) {
+                    showMessage('月曜日は定休日です。別の日付を選択してください。', 'error');
+                    e.target.value = '';
+                    return;
+                }
+                if (date && selectedFacility) {
+                    await loadAvailableTimes(selectedFacility.id, date);
+                }
+            });
+
+            // パターンB: 日付選択
+            document.getElementById('datetimeDate').addEventListener('change', (e) => {
+                const date = e.target.value;
+                if (date && isMonday(date)) {
+                    showMessage('月曜日は定休日です。別の日付を選択してください。', 'error');
+                    e.target.value = '';
+                    return;
+                }
+                checkPatternBInputs();
+            });
+
+            // パターンB: 時刻・時間選択
+            document.getElementById('startTime').addEventListener('change', checkPatternBInputs);
+            document.getElementById('duration').addEventListener('change', checkPatternBInputs);
+
+            // 料金計算トリガー
+            ['customerType', 'lessonType', 'participants'].forEach(id => {
+                document.getElementById(id).addEventListener('change', calculatePrice);
+            });
+
+            // フォーム送信
+            document.getElementById('bookingForm').addEventListener('submit', handleSubmit);
+        }
+
+        // パターン切り替え
+        function switchPattern(pattern) {
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            if (pattern === 'facility') {
+                document.getElementById('facilityPattern').classList.add('active');
+            } else {
+                document.getElementById('datetimePattern').classList.add('active');
+            }
+            
+            document.getElementById('commonFields').style.display = 'none';
+            document.getElementById('availableTimesArea').innerHTML = '';
+            document.getElementById('availableFacilitiesArea').innerHTML = '';
+        }
+
+        // 月曜日チェック
+        function isMonday(dateString) {
+            const date = new Date(dateString + 'T00:00:00');
+            return date.getDay() === 1;
+        }
+
+        // パターンA: 空き時間読み込み
+        async function loadAvailableTimes(facilityId, date) {
+            const area = document.getElementById('availableTimesArea');
+            area.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> 空き時間を確認中...</div>';
+
+            try {
+                // ともきのスケジュール取得
+                const schedule = await getCoachSchedule(date);
+                
+                // 時間スロット生成
+                const timeSlots = generateTimeSlots();
+                
+                // 各スロットの空き状況チェック
+                const slotsHTML = [];
+                for (const slot of timeSlots) {
+                    const isAvailable = await checkTimeAvailability(facilityId, date, slot.start, slot.end, schedule);
+                    const slotClass = isAvailable ? '' : 'disabled';
+                    slotsHTML.push(`
+                        <div class="time-slot ${slotClass}" data-start="${slot.start}" data-end="${slot.end}" onclick="selectTimeSlot(this, ${isAvailable})">
+                            ${slot.label}
+                        </div>
+                    `);
+                }
+
+                area.innerHTML = `
+                    <label><i class="fas fa-clock"></i> 空き時間 (緑:空き / グレー:予約済み)</label>
+                    <div class="time-slots">${slotsHTML.join('')}</div>
+                `;
+            } catch (error) {
+                area.innerHTML = `<div class="error">空き時間の確認に失敗しました: ${error.message}</div>`;
+            }
+        }
+
+        // 時間スロット生成
+        function generateTimeSlots() {
+            const slots = [];
+            for (let hour = 9; hour <= 20; hour++) {
+                for (let minute = 0; minute < 60; minute += 30) {
+                    const start = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    const endMinute = minute + 30;
+                    const endHour = endMinute === 60 ? hour + 1 : hour;
+                    const end = `${String(endHour).padStart(2, '0')}:${String(endMinute % 60).padStart(2, '0')}`;
+                    slots.push({ start, end, label: `${start}〜${end}` });
+                }
+            }
+            return slots;
+        }
+
+        // ともきのスケジュール取得
+        async function getCoachSchedule(date) {
+            const startOfDay = new Date(date + 'T00:00:00').toISOString();
+            const endOfDay = new Date(date + 'T23:59:59').toISOString();
+
+            // ブロック時間取得
+            const { data: blockedTimes, error: blockedError } = await supabase
+                .from('blocked_times')
+                .select('*, facilities(*)')
+                .gte('start_time', startOfDay)
+                .lte('start_time', endOfDay);
+
+            if (blockedError) throw blockedError;
+
+            // 承認済みレッスン取得
+            const { data: approvedLessons, error: lessonsError } = await supabase
+                .from('lesson_requests')
+                .select('*, facilities(*)')
+                .eq('status', 'approved')
+                .gte('start_time', startOfDay)
+                .lte('start_time', endOfDay);
+
+            if (lessonsError) throw lessonsError;
+
+            return [...(blockedTimes || []), ...(approvedLessons || [])];
+        }
+
+        // 時間の空き状況チェック
+        async function checkTimeAvailability(facilityId, date, startTime, endTime, schedule) {
+            const requestStart = new Date(date + 'T' + startTime + ':00');
+            const requestEnd = new Date(date + 'T' + endTime + ':00');
+
+            // スケジュールとの重複チェック
+            for (const item of schedule) {
+                const itemStart = new Date(item.start_time);
+                const itemEnd = new Date(item.start_time);
+                itemEnd.setMinutes(itemEnd.getMinutes() + (item.duration_minutes || 60));
+
+                if (requestStart < itemEnd && requestEnd > itemStart) {
+                    return false; // 重複あり
+                }
+            }
+
+            // 移動時間チェック (前後の予定がある場合)
+            const facility = facilities.find(f => f.id === facilityId);
+            if (!facility || !facility.address) return true;
+
+            // 前の予定チェック
+            const prevAppointment = schedule.filter(s => new Date(s.start_time) < requestStart)
+                                           .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))[0];
+            
+            if (prevAppointment && prevAppointment.facilities) {
+                const prevEnd = new Date(prevAppointment.start_time);
+                prevEnd.setMinutes(prevEnd.getMinutes() + (prevAppointment.duration_minutes || 60));
+                
+                const travelTime = await getTravelTime(prevAppointment.facilities.address, facility.address);
+                const requiredArrival = new Date(prevEnd.getTime() + travelTime * 60000);
+                
+                if (requiredArrival > requestStart) {
+                    return false; // 移動時間不足
+                }
+            }
+
+            return true;
+        }
+
+        // 移動時間取得 (Google Maps Distance Matrix API)
+        async function getTravelTime(origin, destination) {
+            if (!origin || !destination) return 0;
+
+            try {
+                const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&mode=driving&key=${GOOGLE_MAPS_API_KEY}`;
+                
+                // CORSの問題があるため、実際の運用ではバックエンドAPIを経由する必要があります
+                // ここでは簡易的に固定値を返します
+                console.log('Travel time calculation:', origin, 'to', destination);
+                return 20; // デフォルト20分
+            } catch (error) {
+                console.error('Travel time error:', error);
+                return 20;
+            }
+        }
+
+        // 時間スロット選択
+        function selectTimeSlot(element, isAvailable) {
+            if (!isAvailable) return;
+
+            document.querySelectorAll('.time-slot').forEach(slot => slot.classList.remove('selected'));
+            element.classList.add('selected');
+
+            const startTime = element.dataset.start;
+            const endTime = element.dataset.end;
+            
+            // 時間の長さを計算
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+            const duration = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+
+            selectedDateTime = {
+                date: document.getElementById('facilityDate').value,
+                start: startTime,
+                duration: duration
+            };
+
+            document.getElementById('commonFields').style.display = 'block';
+            calculatePrice();
+        }
+
+        // パターンB: 入力チェック
+        async function checkPatternBInputs() {
+            const date = document.getElementById('datetimeDate').value;
+            const startTime = document.getElementById('startTime').value;
+            const duration = document.getElementById('duration').value;
+
+            if (date && startTime && duration) {
+                await loadAvailableFacilities(date, startTime, parseInt(duration));
+            }
+        }
+
+        // パターンB: 対応可能施設読み込み
+        async function loadAvailableFacilities(date, startTime, duration) {
+            const area = document.getElementById('availableFacilitiesArea');
+            area.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> 対応可能な施設を確認中...</div>';
+
+            try {
+                const schedule = await getCoachSchedule(date);
+                const facilitiesHTML = [];
+
+                for (const facility of facilities) {
+                    const isAvailable = await checkFacilityAvailability(facility, date, startTime, duration, schedule);
+                    const availClass = isAvailable ? 'available' : 'unavailable';
+                    const cardClass = isAvailable ? '' : 'unavailable';
+                    
+                    facilitiesHTML.push(`
+                        <div class="facility-card ${cardClass}" data-facility-id="${facility.id}" onclick="selectFacility(this, ${isAvailable})">
+                            <div class="facility-info">
+                                <h3>${facility.name}</h3>
+                                <p>${facility.address || ''}</p>
+                            </div>
+                            <div class="facility-status ${availClass}">
+                                <i class="fas fa-${isAvailable ? 'check-circle' : 'times-circle'}"></i>
+                                ${isAvailable ? '対応可' : '移動時間不足'}
+                            </div>
+                        </div>
+                    `);
+                }
+
+                area.innerHTML = `
+                    <label><i class="fas fa-building"></i> 対応可能な施設</label>
+                    <div class="facility-list">${facilitiesHTML.join('')}</div>
+                `;
+            } catch (error) {
+                area.innerHTML = `<div class="error">施設の確認に失敗しました: ${error.message}</div>`;
+            }
+        }
+
+        // 施設の対応可否チェック
+        async function checkFacilityAvailability(facility, date, startTime, duration, schedule) {
+            const requestStart = new Date(date + 'T' + startTime + ':00');
+            const requestEnd = new Date(requestStart.getTime() + duration * 60000);
+
+            // スケジュールとの重複チェック
+            for (const item of schedule) {
+                const itemStart = new Date(item.start_time);
+                const itemEnd = new Date(item.start_time);
+                itemEnd.setMinutes(itemEnd.getMinutes() + (item.duration_minutes || 60));
+
+                if (requestStart < itemEnd && requestEnd > itemStart) {
+                    return false;
+                }
+            }
+
+            // 移動時間チェック
+            if (!facility.address) return true;
+
+            // 前の予定
+            const prevAppointment = schedule.filter(s => new Date(s.start_time) < requestStart)
+                                           .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))[0];
+            
+            if (prevAppointment && prevAppointment.facilities) {
+                const prevEnd = new Date(prevAppointment.start_time);
+                prevEnd.setMinutes(prevEnd.getMinutes() + (prevAppointment.duration_minutes || 60));
+                
+                const travelTime = await getTravelTime(prevAppointment.facilities.address, facility.address);
+                const requiredArrival = new Date(prevEnd.getTime() + travelTime * 60000);
+                
+                if (requiredArrival > requestStart) return false;
+            }
+
+            // 次の予定
+            const nextAppointment = schedule.filter(s => new Date(s.start_time) > requestEnd)
+                                           .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))[0];
+            
+            if (nextAppointment && nextAppointment.facilities) {
+                const travelTime = await getTravelTime(facility.address, nextAppointment.facilities.address);
+                const requiredDeparture = new Date(new Date(nextAppointment.start_time).getTime() - travelTime * 60000);
+                
+                if (requestEnd > requiredDeparture) return false;
+            }
+
+            return true;
+        }
+
+        // 施設選択
+        function selectFacility(element, isAvailable) {
+            if (!isAvailable) return;
+
+            document.querySelectorAll('.facility-card').forEach(card => card.classList.remove('selected'));
+            element.classList.add('selected');
+
+            const facilityId = element.dataset.facilityId;
+            selectedFacility = facilities.find(f => f.id === facilityId);
+
+            const date = document.getElementById('datetimeDate').value;
+            const startTime = document.getElementById('startTime').value;
+            const duration = parseInt(document.getElementById('duration').value);
+
+            selectedDateTime = { date, start: startTime, duration };
+
+            document.getElementById('commonFields').style.display = 'block';
+            calculatePrice();
+        }
+
+        // 料金計算
+        function calculatePrice() {
+            const customerType = document.getElementById('customerType').value;
+            const lessonType = document.getElementById('lessonType').value;
+            const participants = parseInt(document.getElementById('participants').value);
+
+            if (!customerType || !lessonType || !participants || !selectedDateTime) return;
+
+            const duration = selectedDateTime.duration;
+            const hours = duration / 60;
+
+            let coachFee = 0;
+
+            if (lessonType === 'individual') {
+                // 個人レッスン料金
+                const baseRate = customerType === 'junior' ? 2500 : 3000;
+                
+                if (participants === 1) {
+                    coachFee = baseRate * hours;
+                } else {
+                    const perPersonRate = customerType === 'junior' 
+                        ? [0, 0, 1500, 1200, 1000][participants]
+                        : [0, 0, 1750, 1300, 1150][participants];
+                    coachFee = perPersonRate * participants * hours;
+                }
+            } else if (lessonType === 'group') {
+                // グループレッスン料金
+                coachFee = 2200 * (hours / 1.5); // 1.5時間あたり2200円
+            }
+
+            const priceArea = document.getElementById('priceDisplayArea');
+            priceArea.innerHTML = `
+                <div class="price-display">
+                    <h3><i class="fas fa-yen-sign"></i> 料金</h3>
+                    <div class="price-row">
+                        <span>コーチ料金 (${hours}時間)</span>
+                        <span>¥${coachFee.toLocaleString()}</span>
+                    </div>
+                    <div class="price-row">
+                        <span><strong>合計</strong></span>
+                        <span><strong>¥${coachFee.toLocaleString()}</strong></span>
+                    </div>
+                    <small style="color: #666; display: block; margin-top: 10px;">
+                        ※施設利用料は別途かかります（当日お支払い）
+                    </small>
+                </div>
+            `;
+        }
+
+        // フォーム送信
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            if (!selectedFacility || !selectedDateTime) {
+                showMessage('施設と日時を選択してください', 'error');
+                return;
+            }
+
+            const formData = {
+                customer_name: document.getElementById('customerName').value,
+                customer_type: document.getElementById('customerType').value,
+                lesson_type: document.getElementById('lessonType').value,
+                facility_id: selectedFacility.id,
+                start_time: new Date(selectedDateTime.date + 'T' + selectedDateTime.start + ':00').toISOString(),
+                duration_minutes: selectedDateTime.duration,
+                participants: parseInt(document.getElementById('participants').value),
+                facility_booking_by: document.getElementById('facilityBookingBy').value,
+                notes: document.getElementById('notes').value,
+                status: 'pending'
+            };
+
+            // 料金計算
+            const customerType = formData.customer_type;
+            const lessonType = formData.lesson_type;
+            const participants = formData.participants;
+            const hours = formData.duration_minutes / 60;
+
+            let coachFee = 0;
+            if (lessonType === 'individual') {
+                const baseRate = customerType === 'junior' ? 2500 : 3000;
+                if (participants === 1) {
+                    coachFee = baseRate * hours;
+                } else {
+                    const perPersonRate = customerType === 'junior' 
+                        ? [0, 0, 1500, 1200, 1000][participants]
+                        : [0, 0, 1750, 1300, 1150][participants];
+                    coachFee = perPersonRate * participants * hours;
+                }
+            } else {
+                coachFee = 2200 * (hours / 1.5);
+            }
+
+            formData.coach_fee = Math.round(coachFee);
+
+            try {
+                const { data, error } = await supabase
+                    .from('lesson_requests')
+                    .insert([formData])
+                    .select();
+
+                if (error) throw error;
+
+                showMessage('予約申請を受け付けました！コーチから確定のご連絡をお待ちください。', 'success');
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } catch (error) {
+                showMessage('予約申請に失敗しました: ' + error.message, 'error');
+            }
+        }
+
+        // メッセージ表示
+        function showMessage(message, type) {
+            const area = document.getElementById('messageArea');
+            area.innerHTML = `<div class="${type}">${message}</div>`;
+            area.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
