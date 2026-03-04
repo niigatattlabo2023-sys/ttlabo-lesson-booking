@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面 - 新潟卓球ラボ</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f0f4f8;color:#333;}
+
+/* ログイン画面 */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a3a5c,#0d6efd);}
+.login-box{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2);}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo .icon{font-size:3rem;color:#ff6b00;display:block;}
+.login-logo h1{font-size:1.5rem;color:#1a3a5c;margin-top:8px;}
+.login-logo p{color:#666;font-size:0.85rem;}
+.form-group{margin-bottom:18px;}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;font-size:0.9rem;color:#555;}
+.form-group input{width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:0.95rem;transition:border-color 0.2s;}
+.form-group input:focus{outline:none;border-color:#0d6efd;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:50px;font-size:0.95rem;font-weight:700;cursor:pointer;border:none;transition:all 0.2s;}
+.btn-primary{background:#ff6b00;color:#fff;}
+.btn-primary:hover{background:#e55e00;transform:translateY(-2px);box-shadow:0 4px 14px rgba(255,107,0,0.4);}
+.btn-block{width:100%;}
+.btn-sm{padding:6px 14px;font-size:0.82rem;}
+.btn-success{background:#4caf50;color:#fff;}
+.btn-success:hover{background:#388e3c;}
+.btn-danger{background:#f44336;color:#fff;}
+.btn-danger:hover{background:#c62828;}
+.btn-info{background:#0d6efd;color:#fff;}
+.btn-info:hover{background:#0b5ed7;}
+.btn-outline{background:transparent;border:2px solid #ddd;color:#555;}
+.btn-outline:hover{border-color:#0d6efd;color:#0d6efd;}
+.login-msg{text-align:center;color:#c62828;font-size:0.88rem;margin-top:12px;min-height:20px;}
+
+/* 管理画面レイアウト */
+#adminWrap{display:none;min-height:100vh;}
+.admin-header{background:linear-gradient(135deg,#1a3a5c,#0d6efd);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;}
+.admin-logo{display:flex;align-items:center;gap:10px;font-size:1.1rem;font-weight:700;}
+.admin-logo span{font-size:1.5rem;}
+.header-actions{display:flex;align-items:center;gap:12px;}
+.header-actions .gcal-status{font-size:0.8rem;opacity:0.85;}
+.admin-body{display:flex;min-height:calc(100vh - 56px);}
+.sidebar{width:220px;background:#1a3a5c;padding:16px 0;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:14px 20px;color:rgba(255,255,255,0.75);cursor:pointer;transition:all 0.2s;font-size:0.9rem;}
+.nav-item:hover{background:rgba(255,255,255,0.1);color:#fff;}
+.nav-item.active{background:#ff6b00;color:#fff;}
+.nav-item i{width:20px;text-align:center;}
+.main-content{flex:1;padding:28px;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* カード・共通 */
+.card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.07);margin-bottom:20px;}
+.card h3{font-size:1.1rem;color:#1a3a5c;margin-bottom:16px;border-bottom:2px solid #f0f4f8;padding-bottom:10px;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{background:linear-gradient(135deg,#1a3a5c,#0d6efd);color:#fff;border-radius:14px;padding:20px;text-align:center;}
+.stat-card.orange{background:linear-gradient(135deg,#ff6b00,#ff8c00);}
+.stat-card.green{background:linear-gradient(135deg,#2e7d32,#4caf50);}
+.stat-card .stat-num{font-size:2rem;font-weight:700;}
+.stat-card .stat-label{font-size:0.8rem;opacity:0.85;margin-top:4px;}
+table{width:100%;border-collapse:collapse;}
+th{background:#f5f7fa;padding:10px 14px;text-align:left;font-size:0.85rem;color:#555;border-bottom:2px solid #eee;}
+td{padding:12px 14px;border-bottom:1px solid #f0f4f8;font-size:0.88rem;vertical-align:middle;}
+tr:hover td{background:#fafbff;}
+.badge{padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;white-space:nowrap;}
+.badge-pending{background:#fff9c4;color:#f57f17;}
+.badge-approved{background:#c8e6c9;color:#2e7d32;}
+.badge-rejected{background:#ffcdd2;color:#c62828;}
+.actions{display:flex;gap:6px;flex-wrap:wrap;}
+.alert{padding:12px 16px;border-radius:10px;margin:12px 0;font-size:0.88rem;}
+.alert-success{background:#e8f5e9;color:#2e7d32;border-left:4px solid #4caf50;}
+.alert-error{background:#fce4ec;color:#c62828;border-left:4px solid #f44336;}
+.alert-info{background:#e3f2fd;color:#1565c0;border-left:4px solid #0d6efd;}
+
+/* モーダル */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;display:none;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:16px;padding:28px;width:90%;max-width:560px;max-height:85vh;overflow-y:auto;position:relative;}
+.modal h3{color:#1a3a5c;margin-bottom:16px;font-size:1.2rem;}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#999;}
+.detail-row{display:flex;gap:8px;margin-bottom:10px;font-size:0.9rem;}
+.detail-label{font-weight:700;color:#555;min-width:100px;}
+.line-msg{background:#06c755;color:#fff;border-radius:10px;padding:14px;margin:12px 0;font-size:0.85rem;white-space:pre-wrap;word-break:break-all;}
+
+/* フォーム */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-weight:600;margin-bottom:5px;font-size:0.85rem;color:#555;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:0.9rem;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#0d6efd;}
+.form-group textarea{resize:vertical;min-height:70px;}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .admin-body{flex-direction:column;}
+  .main-content{padding:16px;}
+  .form-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ログイン画面 -->
+<div id="loginWrap" class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="icon">🏓</span>
+      <h1>TTラボ 管理画面</h1>
+      <p>新潟卓球ラボ コーチ専用</p>
+    </div>
+    <div class="form-group">
+      <label><i class="fas fa-envelope"></i> メールアドレス</label>
+      <input type="email" id="loginEmail" placeholder="admin@example.com" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="form-group">
+      <label><i class="fas fa-lock"></i> パスワード</label>
+      <input type="password" id="loginPass" placeholder="パスワード" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="doLogin()">
+      <i class="fas fa-sign-in-alt"></i> ログイン
+    </button>
+    <p id="loginMsg" class="login-msg"></p>
+  </div>
+</div>
+
+<!-- 管理画面 -->
+<div id="adminWrap">
+  <div class="admin-header">
+    <div class="admin-logo">
+      <span>🏓</span> TTラボ 管理画面
+    </div>
+    <div class="header-actions">
+      <span id="gcalStatus" class="gcal-status">Googleカレンダー: 未連携</span>
+      <button class="btn btn-sm btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.5)" onclick="connectGCal()">
+        <i class="fab fa-google"></i> カレンダー連携
+      </button>
+      <button class="btn btn-sm btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.5)" onclick="doLogout()">
+        <i class="fas fa-sign-out-alt"></i> ログアウト
+      </button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div class="sidebar">
+      <div class="nav-item active" onclick="showPage('dashboard')"><i class="fas fa-tachometer-alt"></i> ダッシュボード</div>
+      <div class="nav-item" onclick="showPage('requests')"><i class="fas fa-calendar-check"></i> 予約管理 <span id="pendingBadge" style="background:#ff6b00;color:#fff;border-radius:10px;padding:2px 7px;font-size:0.75rem;margin-left:auto;display:none"></span></div>
+      <div class="nav-item" onclick="showPage('schedule')"><i class="fas fa-clock"></i> スケジュール</div>
+      <div class="nav-item" onclick="showPage('facilities')"><i class="fas fa-map-marker-alt"></i> 施設管理</div>
+    </div>
+    <div class="main-content">
+
+      <!-- ダッシュボード -->
+      <div id="pageDashboard" class="page active">
+        <h2 style="color:#1a3a5c;margin-bottom:20px"><i class="fas fa-tachometer-alt"></i> ダッシュボード</h2>
+        <div class="stats-grid">
+          <div class="stat-card orange"><div class="stat-num" id="statPending">-</div><div class="stat-label">承認待ち</div></div>
+          <div class="stat-card green"><div class="stat-num" id="statApproved">-</div><div class="stat-label">今月承認済み</div></div>
+          <div class="stat-card"><div class="stat-num" id="statRevenue">-</div><div class="stat-label">今月売上目安</div></div>
+        </div>
+        <div class="card">
+          <h3><i class="fas fa-bell"></i> 最新の申請（承認待ち）</h3>
+          <div id="dashPending"></div>
+        </div>
+      </div>
+
+      <!-- 予約管理 -->
+      <div id="pageRequests" class="page">
+        <h2 style="color:#1a3a5c;margin-bottom:20px"><i class="fas fa-calendar-check"></i> 予約管理</h2>
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <select id="filterStatus" onchange="loadRequests()" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:0.9rem">
+              <option value="all">すべて</option>
+              <option value="pending">承認待ち</option>
+              <option value="approved">承認済み</option>
+              <option value="rejected">却下</option>
+            </select>
+            <button class="btn btn-sm btn-info" onclick="loadRequests()"><i class="fas fa-sync"></i> 更新</button>
+          </div>
+        </div>
+        <div class="card">
+          <div id="requestsMsg"></div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>日時</th><th>施設</th><th>申請者</th><th>時間</th><th>料金</th><th>状態</th><th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="requestsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- スケジュール管理 -->
+      <div id="pageSchedule" class="page">
+        <h2 style="color:#1a3a5c;margin-bottom:20px"><i class="fas fa-clock"></i> スケジュール管理</h2>
+        <div class="card">
+          <h3>ブロック時間を追加</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>日付</label>
+              <input type="date" id="blkDate">
+            </div>
+            <div class="form-group">
+              <label>開始時間</label>
+              <input type="time" id="blkStart">
+            </div>
+            <div class="form-group">
+              <label>終了時間</label>
+              <input type="time" id="blkEnd">
+            </div>
+            <div class="form-group">
+              <label>メモ</label>
+              <input type="text" id="blkNote" placeholder="大会、プライベート等">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addBlock()"><i class="fas fa-plus"></i> 追加</button>
+          <div id="blockMsg"></div>
+        </div>
+        <div class="card">
+          <h3>登録済みブロック時間</h3>
+          <div id="blockList"></div>
+        </div>
+      </div>
+
+      <!-- 施設管理 -->
+      <div id="pageFacilities" class="page">
+        <h2 style="color:#1a3a5c;margin-bottom:20px"><i class="fas fa-map-marker-alt"></i> 施設管理</h2>
+        <div class="card">
+          <h3>施設を追加</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>施設名 *</label>
+              <input type="text" id="facName" placeholder="〇〇体育センター">
+            </div>
+            <div class="form-group">
+              <label>住所 *</label>
+              <input type="text" id="facAddr" placeholder="新潟県〇〇市...">
+            </div>
+            <div class="form-group">
+              <label>電話番号</label>
+              <input type="tel" id="facPhone" placeholder="0256-00-0000">
+            </div>
+            <div class="form-group">
+              <label>予約URL</label>
+              <input type="url" id="facUrl" placeholder="https://...">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addFacility()"><i class="fas fa-plus"></i> 追加</button>
+          <div id="facMsg"></div>
+        </div>
+        <div class="card">
+          <h3>施設一覧</h3>
+          <div id="facilityList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 詳細モーダル -->
+<div id="detailModal" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3 id="modalTitle"><i class="fas fa-calendar-check"></i> 予約詳細</h3>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// =====================================================
+// Supabase 初期化（このファイルで1回だけ）
+// =====================================================
+const SUPABASE_URL = 'https://lwbysesbbehholrojonc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3YnlzZXNiYmVoaG9scm9qb25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0MjcxNjMsImV4cCI6MjA4ODAwMzE2M30.2NwutCuF7mODQ3bZUlDumn-wx2zHLWR_gP1tjHQuNqg';
+const { createClient } = window.supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const GOOGLE_CLIENT_ID = '279588794018-s0o2gh9rk2mkl8lhjldon7bn5o41pl6h.apps.googleusercontent.com';
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+
+let googleToken = null;
+let facilitiesCache = [];
+let currentRequestId = null;
+
+// =====================================================
+// 認証
+// =====================================================
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  document.getElementById('loginMsg').textContent = '';
+
+  if (!email || !pass) {
+    document.getElementById('loginMsg').textContent = 'メールとパスワードを入力してください';
+    return;
+  }
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    document.getElementById('loginMsg').textContent = 'ログイン失敗: ' + error.message;
+    return;
+  }
+
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('adminWrap').style.display = 'block';
+  loadDashboard();
+  loadFacilitiesCache();
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('adminWrap').style.display = 'none';
+  googleToken = null;
+  document.getElementById('gcalStatus').textContent = 'Googleカレンダー: 未連携';
+}
+
+// =====================================================
+// Googleカレンダー連携
+// =====================================================
+function connectGCal() {
+  if (!window.google || !window.google.accounts) {
+    alert('Google Identity Services がまだ読み込まれていません。少し待ってから再試行してください。');
+    return;
+  }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: GOOGLE_SCOPES,
+    callback: (response) => {
+      if (response.access_token) {
+        googleToken = response.access_token;
+        document.getElementById('gcalStatus').textContent = '✅ Googleカレンダー: 連携済み';
+      }
+    }
+  });
+  client.requestAccessToken();
+}
+
+async function addCalendarEvent(request, facility) {
+  if (!googleToken) return null;
+  try {
+    const dateStr = request.date;
+    const startT = request.start_time.substring(0,5);
+    const endT = request.end_time.substring(0,5);
+    const startISO = `${dateStr}T${startT}:00+09:00`;
+    const endISO   = `${dateStr}T${endT}:00+09:00`;
+
+    const event = {
+      summary: `[${facility ? facility.name : '施設'}] レッスン - ${request.applicant_name}`,
+      location: facility ? facility.address : '',
+      description: `申請者: ${request.applicant_name}\n電話: ${request.applicant_phone}\nメニュー: ${request.lesson_type}\n人数: ${request.participants}名\n料金: ¥${(request.price||0).toLocaleString()}\n備考: ${request.notes||''}`,
+      start: { dateTime: startISO, timeZone: 'Asia/Tokyo' },
+      end:   { dateTime: endISO,   timeZone: 'Asia/Tokyo' },
+      reminders: {
+        useDefault: false,
+        overrides: [{ method: 'popup', minutes: 120 }]
+      }
+    };
+
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${googleToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(event)
+    });
+    const data = await res.json();
+    return data.id || null;
+  } catch(e) {
+    console.error('カレンダー追加エラー:', e);
+    return null;
+  }
+}
+
+// =====================================================
+// ページナビゲーション
+// =====================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pageMap = {dashboard:'pageDashboard',requests:'pageRequests',schedule:'pageSchedule',facilities:'pageFacilities'};
+  document.getElementById(pageMap[name]).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name==='requests') loadRequests();
+  if (name==='schedule') loadBlocks();
+  if (name==='facilities') loadFacilities();
+}
+
+// =====================================================
+// ダッシュボード
+// =====================================================
+async function loadDashboard() {
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+  const monthStart = `${y}-${m}-01`;
+  const monthEnd   = `${y}-${m}-31`;
+
+  const { data: pending } = await db.from('lesson_requests').select('*').eq('status','pending');
+  const { data: approved } = await db.from('lesson_requests').select('*').eq('status','approved').gte('date',monthStart).lte('date',monthEnd);
+
+  const pendingCount = pending?.length || 0;
+  const approvedCount = approved?.length || 0;
+  const revenue = (approved||[]).reduce((s,r)=>s+(r.price||0),0);
+
+  document.getElementById('statPending').textContent = pendingCount;
+  document.getElementById('statApproved').textContent = approvedCount;
+  document.getElementById('statRevenue').textContent = '¥'+revenue.toLocaleString();
+
+  const pb = document.getElementById('pendingBadge');
+  if (pendingCount > 0) { pb.textContent = pendingCount; pb.style.display='inline'; }
+
+  if (pending && pending.length > 0) {
+    let html = '<div style="overflow-x:auto"><table><thead><tr><th>日時</th><th>施設</th><th>申請者</th><th>操作</th></tr></thead><tbody>';
+    for (const r of pending.slice(0,5)) {
+      const fac = facilitiesCache.find(f=>f.id==r.facility_id);
+      html += `<tr>
+        <td>${r.date} ${r.start_time?.substring(0,5)}</td>
+        <td>${fac?fac.name:'不明'}</td>
+        <td>${r.applicant_name}</td>
+        <td class="actions">
+          <button class="btn btn-sm btn-success" onclick="approve('${r.id}')"><i class="fas fa-check"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="reject('${r.id}')"><i class="fas fa-times"></i></button>
+          <button class="btn btn-sm btn-info" onclick="openDetail('${r.id}')"><i class="fas fa-eye"></i></button>
+        </td>
+      </tr>`;
+    }
+    html += '</tbody></table></div>';
+    document.getElementById('dashPending').innerHTML = html;
+  } else {
+    document.getElementById('dashPending').innerHTML = '<div class="alert alert-info">承認待ちの申請はありません</div>';
+  }
+}
+
+// =====================================================
+// 予約管理
+// =====================================================
+async function loadRequests() {
+  const status = document.getElementById('filterStatus').value;
+  const tbody = document.getElementById('requestsTable');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px"><i class="fas fa-spinner fa-spin"></i> 読み込み中...</td></tr>';
+
+  let query = db.from('lesson_requests').select('*').order('date',{ascending:false});
+  if (status !== 'all') query = query.eq('status', status);
+
+  const { data, error } = await query;
+  if (error) {
+    document.getElementById('requestsMsg').innerHTML = `<div class="alert alert-error">読み込みエラー: ${error.message}</div>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#999">該当する予約がありません</td></tr>';
+    return;
+  }
+
+  let html = '';
+  for (const r of data) {
+    const fac = facilitiesCache.find(f=>f.id==r.facility_id);
+    const badgeClass = r.status==='pending'?'badge-pending':r.status==='approved'?'badge-approved':'badge-rejected';
+    const badgeLabel = r.status==='pending'?'承認待ち':r.status==='approved'?'承認済み':'却下';
+    html += `<tr>
+      <td>${r.date}<br><small>${r.start_time?.substring(0,5)}〜${r.end_time?.substring(0,5)}</small></td>
+      <td>${fac?fac.name:'不明'}</td>
+      <td>${r.applicant_name}<br><small>${r.applicant_phone}</small></td>
+      <td>${r.duration_minutes}分</td>
+      <td>¥${(r.price||0).toLocaleString()}</td>
+      <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+      <td class="actions">
+        ${r.status==='pending'?`
+          <button class="btn btn-sm btn-success" onclick="approve('${r.id}')"><i class="fas fa-check"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="reject('${r.id}')"><i class="fas fa-times"></i></button>
+        `:''}
+        <button class="btn btn-sm btn-info" onclick="openDetail('${r.id}')"><i class="fas fa-eye"></i></button>
+      </td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+async function approve(id) {
+  if (!confirm('この予約を承認しますか？')) return;
+
+  const { data: req } = await db.from('lesson_requests').select('*').eq('id',id).single();
+  const fac = facilitiesCache.find(f=>f.id==req?.facility_id);
+
+  let calEventId = null;
+  if (googleToken && req) {
+    calEventId = await addCalendarEvent(req, fac);
+  }
+
+  const updateData = { status: 'approved' };
+  if (calEventId) updateData.calendar_event_id = calEventId;
+
+  const { error } = await db.from('lesson_requests').update(updateData).eq('id', id);
+  if (error) { alert('エラー: ' + error.message); return; }
+
+  const lineMsg = generateLineMsg(req, fac);
+  showLineMsg(lineMsg, calEventId);
+
+  loadDashboard();
+  if (document.getElementById('pageRequests').classList.contains('active')) loadRequests();
+}
+
+async function reject(id) {
+  if (!confirm('この予約を却下しますか？')) return;
+  const { error } = await db.from('lesson_requests').update({status:'rejected'}).eq('id',id);
+  if (error) { alert('エラー: ' + error.message); return; }
+  loadDashboard();
+  if (document.getElementById('pageRequests').classList.contains('active')) loadRequests();
+}
+
+function generateLineMsg(req, fac) {
+  if (!req) return '';
+  return `【レッスン確定】\n${req.applicant_name} 様\n\n✅ ご予約が確定しました！\n\n📅 日時: ${req.date} ${req.start_time?.substring(0,5)}〜${req.end_time?.substring(0,5)}\n📍 場所: ${fac?fac.name:'施設未設定'}\n⏱️ 時間: ${req.duration_minutes}分\n💴 料金: ¥${(req.price||0).toLocaleString()}（施設利用料別）\n\n当日はよろしくお願いします！\n\nTTラボ ともき`;
+}
+
+function showLineMsg(msg, calEventId) {
+  const modal = document.getElementById('detailModal');
+  const body = document.getElementById('modalBody');
+  let html = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> 予約を承認しました！</div>';
+  if (calEventId) html += '<div class="alert alert-info"><i class="fab fa-google"></i> Googleカレンダーに追加しました（2時間前リマインダー付き）</div>';
+  html += `<div class="line-msg" id="lineMsg">${msg}</div>`;
+  html += `<button class="btn btn-sm" style="background:#06c755;color:#fff" onclick="copyLine()"><i class="fas fa-copy"></i> LINEメッセージをコピー</button>`;
+  html += '<div id="copyConfirm" style="color:#2e7d32;font-size:0.82rem;margin-top:6px;display:none">✅ コピーしました！</div>';
+  document.getElementById('modalTitle').innerHTML = '<i class="fas fa-check-circle" style="color:#4caf50"></i> 承認完了';
+  body.innerHTML = html;
+  modal.classList.add('open');
+}
+
+function copyLine() {
+  const msg = document.getElementById('lineMsg').textContent;
+  navigator.clipboard.writeText(msg).then(()=>{
+    document.getElementById('copyConfirm').style.display='block';
+    setTimeout(()=>document.getElementById('copyConfirm').style.display='none',2000);
+  });
+}
+
+async function openDetail(id) {
+  const { data: req } = await db.from('lesson_requests').select('*').eq('id',id).single();
+  if (!req) return;
+  const fac = facilitiesCache.find(f=>f.id==req.facility_id);
+  const badgeClass = req.status==='pending'?'badge-pending':req.status==='approved'?'badge-approved':'badge-rejected';
+  const badgeLabel = req.status==='pending'?'承認待ち':req.status==='approved'?'承認済み':'却下';
+
+  let html = `
+    <div class="detail-row"><span class="detail-label">状態</span><span class="badge ${badgeClass}">${badgeLabel}</span></div>
+    <div class="detail-row"><span class="detail-label">申請者</span><span>${req.applicant_name}</span></div>
+    <div class="detail-row"><span class="detail-label">電話</span><span>${req.applicant_phone}</span></div>
+    <div class="detail-row"><span class="detail-label">メール</span><span>${req.applicant_email}</span></div>
+    <div class="detail-row"><span class="detail-label">施設</span><span>${fac?fac.name:'不明'}</span></div>
+    <div class="detail-row"><span class="detail-label">日時</span><span>${req.date} ${req.start_time?.substring(0,5)}〜${req.end_time?.substring(0,5)}</span></div>
+    <div class="detail-row"><span class="detail-label">時間</span><span>${req.duration_minutes}分</span></div>
+    <div class="detail-row"><span class="detail-label">メニュー</span><span>${req.lesson_type}</span></div>
+    <div class="detail-row"><span class="detail-label">人数</span><span>${req.participants}名</span></div>
+    <div class="detail-row"><span class="detail-label">料金</span><span>¥${(req.price||0).toLocaleString()}</span></div>
+    <div class="detail-row"><span class="detail-label">備考</span><span>${req.notes||'なし'}</span></div>
+  `;
+  if (fac?.phone) html += `<div class="detail-row"><span class="detail-label">施設電話</span><span><a href="tel:${fac.phone}">${fac.phone}</a></span></div>`;
+  if (fac?.url) html += `<div class="detail-row"><span class="detail-label">施設予約</span><span><a href="${fac.url}" target="_blank">予約ページ</a></span></div>`;
+  if (req.status==='pending') {
+    html += `<div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-success" onclick="approve('${req.id}');closeModal()"><i class="fas fa-check"></i> 承認</button>
+      <button class="btn btn-danger" onclick="reject('${req.id}');closeModal()"><i class="fas fa-times"></i> 却下</button>
+    </div>`;
+  }
+
+  document.getElementById('modalTitle').innerHTML = '<i class="fas fa-calendar-check"></i> 予約詳細';
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('detailModal').classList.remove('open');
+}
+
+// =====================================================
+// スケジュール（ブロック時間）
+// =====================================================
+async function addBlock() {
+  const date = document.getElementById('blkDate').value;
+  const start = document.getElementById('blkStart').value;
+  const end = document.getElementById('blkEnd').value;
+  const note = document.getElementById('blkNote').value;
+
+  if (!date || !start || !end) {
+    document.getElementById('blockMsg').innerHTML = '<div class="alert alert-error">日付・開始・終了は必須です</div>';
+    return;
+  }
+
+  const { error } = await db.from('blocked_times').insert({
+    date, start_time: start+':00', end_time: end+':00', notes: note
+  });
+  if (error) {
+    document.getElementById('blockMsg').innerHTML = `<div class="alert alert-error">エラー: ${error.message}</div>`;
+  } else {
+    document.getElementById('blockMsg').innerHTML = '<div class="alert alert-success">追加しました</div>';
+    document.getElementById('blkDate').value='';
+    document.getElementById('blkStart').value='';
+    document.getElementById('blkEnd').value='';
+    document.getElementById('blkNote').value='';
+    loadBlocks();
+  }
+}
+
+async function loadBlocks() {
+  const { data } = await db.from('blocked_times').select('*').order('date').order('start_time');
+  if (!data || data.length===0) {
+    document.getElementById('blockList').innerHTML = '<p style="color:#999;font-size:0.9rem">登録済みのブロック時間はありません</p>';
+    return;
+  }
+  let html = '<div style="overflow-x:auto"><table><thead><tr><th>日付</th><th>時間</th><th>メモ</th><th>操作</th></tr></thead><tbody>';
+  data.forEach(b => {
+    html += `<tr>
+      <td>${b.date}</td>
+      <td>${b.start_time?.substring(0,5)}〜${b.end_time?.substring(0,5)}</td>
+      <td>${b.notes||''}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteBlock('${b.id}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('blockList').innerHTML = html;
+}
+
+async function deleteBlock(id) {
+  if (!confirm('削除しますか？')) return;
+  await db.from('blocked_times').delete().eq('id', id);
+  loadBlocks();
+}
+
+// =====================================================
+// 施設管理
+// =====================================================
+async function addFacility() {
+  const name = document.getElementById('facName').value.trim();
+  const address = document.getElementById('facAddr').value.trim();
+  const phone = document.getElementById('facPhone').value.trim();
+  const url = document.getElementById('facUrl').value.trim();
+
+  if (!name || !address) {
+    document.getElementById('facMsg').innerHTML = '<div class="alert alert-error">施設名と住所は必須です</div>';
+    return;
+  }
+
+  const { error } = await db.from('facilities').insert({ name, address, phone, url });
+  if (error) {
+    document.getElementById('facMsg').innerHTML = `<div class="alert alert-error">エラー: ${error.message}</div>`;
+  } else {
+    document.getElementById('facMsg').innerHTML = '<div class="alert alert-success">追加しました</div>';
+    document.getElementById('facName').value='';
+    document.getElementById('facAddr').value='';
+    document.getElementById('facPhone').value='';
+    document.getElementById('facUrl').value='';
+    await loadFacilitiesCache();
+    loadFacilities();
+  }
+}
+
+async function loadFacilities() {
+  await loadFacilitiesCache();
+  if (facilitiesCache.length===0) {
+    document.getElementById('facilityList').innerHTML = '<p style="color:#999;font-size:0.9rem">施設が登録されていません</p>';
+    return;
+  }
+  let html = '<div style="overflow-x:auto"><table><thead><tr><th>施設名</th><th>住所</th><th>電話</th><th>予約URL</th><th>操作</th></tr></thead><tbody>';
+  facilitiesCache.forEach(f => {
+    html += `<tr>
+      <td><strong>${f.name}</strong></td>
+      <td>${f.address}</td>
+      <td>${f.phone||'-'}</td>
+      <td>${f.url?`<a href="${f.url}" target="_blank">リンク</a>`:'-'}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteFacility('${f.id}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('facilityList').innerHTML = html;
+}
+
+async function deleteFacility(id) {
+  if (!confirm('この施設を削除しますか？')) return;
+  await db.from('facilities').delete().eq('id', id);
+  await loadFacilitiesCache();
+  loadFacilities();
+}
+
+async function loadFacilitiesCache() {
+  const { data } = await db.from('facilities').select('*').order('name');
+  facilitiesCache = data || [];
+}
+
+// =====================================================
+// 起動時チェック
+// =====================================================
+window.addEventListener('load', async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('adminWrap').style.display = 'block';
+    await loadFacilitiesCache();
+    loadDashboard();
+  }
+});
+</script>
+</body>
+</html>
