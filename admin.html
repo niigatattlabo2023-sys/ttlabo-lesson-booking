@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TTラボ管理画面</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f0f4f8;color:#333;min-height:100vh}
+/* ログイン */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a3a5c,#2d6ab4)}
+.login-card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.login-title{font-size:1.4rem;font-weight:700;color:#1a3a5c;text-align:center;margin-bottom:24px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.85rem;font-weight:600;color:#666;margin-bottom:5px}
+.form-group input{width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:.9rem}
+.form-group input:focus{outline:none;border-color:#2d6ab4}
+.login-btn{width:100%;padding:12px;background:#e85d04;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer}
+.login-btn:hover{background:#c84a00}
+.login-err{color:#c62828;font-size:.85rem;text-align:center;margin-top:10px}
+/* レイアウト */
+#app{display:flex;min-height:100vh}
+aside{width:220px;background:#1a3a5c;color:#fff;flex-shrink:0;display:flex;flex-direction:column}
+.aside-header{padding:20px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
+.aside-header h2{font-size:1rem;font-weight:700}
+.aside-header p{font-size:.72rem;opacity:.7;margin-top:4px}
+nav a{display:flex;align-items:center;gap:10px;padding:13px 18px;color:rgba(255,255,255,.8);text-decoration:none;font-size:.88rem;transition:.2s;cursor:pointer}
+nav a:hover{background:rgba(255,255,255,.1);color:#fff}
+nav a.active{background:rgba(255,255,255,.15);color:#fff;font-weight:600;border-left:3px solid #e85d04}
+nav a .badge{font-size:.65rem;background:#e85d04;color:#fff;border-radius:10px;padding:2px 6px;margin-left:auto}
+nav a .badge.wip{background:#888}
+.aside-footer{margin-top:auto;padding:16px}
+.aside-footer button{width:100%;padding:8px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;font-size:.82rem;cursor:pointer}
+.aside-footer button:hover{background:rgba(255,255,255,.2)}
+/* メインエリア */
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{background:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.topbar-title{font-size:1.1rem;font-weight:700;color:#1a3a5c}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.gcal-status{font-size:.8rem;padding:6px 12px;border-radius:20px;background:#f0f4f8;color:#666}
+.gcal-status.linked{background:#e8f5e9;color:#2e7d32}
+.gcal-btn{padding:8px 14px;background:#4285f4;color:#fff;border:none;border-radius:6px;font-size:.82rem;cursor:pointer}
+.content{padding:24px;flex:1;overflow-y:auto}
+/* タブパネル */
+.panel{display:none}
+.panel.active{display:block}
+/* カード */
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);padding:20px;margin-bottom:20px}
+.card-title{font-size:1rem;font-weight:700;color:#1a3a5c;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e8f0fb}
+/* 統計 */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);padding:16px;text-align:center}
+.stat-num{font-size:2rem;font-weight:700;color:#1a3a5c}
+.stat-label{font-size:.78rem;color:#888;margin-top:4px}
+/* テーブル */
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th{background:#1a3a5c;color:#fff;padding:10px 12px;text-align:left}
+td{padding:10px 12px;border-bottom:1px solid #eee}
+tr:hover td{background:#f5f8ff}
+/* バッジ */
+.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
+.status-badge.pending{background:#fff3e0;color:#e65100}
+.status-badge.approved{background:#e8f5e9;color:#2e7d32}
+.status-badge.rejected{background:#ffebee;color:#c62828}
+/* ボタン */
+.btn{padding:7px 14px;border:none;border-radius:6px;font-size:.82rem;cursor:pointer;transition:.2s}
+.btn-approve{background:#4caf50;color:#fff}
+.btn-approve:hover{background:#388e3c}
+.btn-reject{background:#ef5350;color:#fff}
+.btn-reject:hover{background:#c62828}
+.btn-delete{background:#888;color:#fff}
+.btn-delete:hover{background:#555}
+.btn-primary{background:#e85d04;color:#fff}
+.btn-primary:hover{background:#c84a00}
+.btn-blue{background:#2d6ab4;color:#fff}
+.btn-blue:hover{background:#1a3a5c}
+/* フォーム */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:.82rem;font-weight:600;color:#555;margin-bottom:4px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:.88rem}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#2d6ab4}
+/* メッセージ */
+.msg{border-radius:8px;padding:11px 15px;margin-bottom:12px;font-size:.85rem}
+.msg.success{background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32}
+.msg.error{background:#ffebee;border:1px solid #ef9a9a;color:#c62828}
+/* LINE */
+.line-box{background:#06c755;color:#fff;border-radius:10px;padding:14px;font-size:.85rem;line-height:1.6}
+.copy-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:.8rem;margin-top:8px}
+/* 大会案内 */
+.tournament-link{display:block;padding:20px;background:#e3ecf9;border-radius:10px;text-decoration:none;color:#1a3a5c;font-weight:600;text-align:center;font-size:1rem;border:2px solid #2d6ab4;transition:.2s}
+.tournament-link:hover{background:#2d6ab4;color:#fff}
+/* 物販 */
+.shop-placeholder{text-align:center;padding:40px;color:#888}
+.shop-placeholder .icon{font-size:3rem;margin-bottom:12px}
+/* レスポンシブ */
+@media(max-width:768px){aside{width:180px}th,td{padding:7px 8px;font-size:.78rem}}
+</style>
+</head>
+<body>
+
+<!-- ログイン画面 -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-title">🏓 TTラボ管理画面</div>
+    <div class="form-group"><label>メールアドレス</label><input type="email" id="login_email" value="admin@ttlabo.com"></div>
+    <div class="form-group"><label>パスワード</label><input type="password" id="login_pass"></div>
+    <button class="login-btn" onclick="doLogin()">ログイン</button>
+    <div class="login-err" id="login_err"></div>
+  </div>
+</div>
+
+<!-- アプリ本体 -->
+<div id="app" style="display:none">
+  <aside>
+    <div class="aside-header"><h2>TTラボ</h2><p>管理画面</p></div>
+    <nav>
+      <a onclick="showPanel('dashboard')" id="nav-dashboard" class="active">📊 ダッシュボード</a>
+      <a onclick="showPanel('reservations')" id="nav-reservations">📋 予約管理 <span class="badge" id="pending_badge" style="display:none">0</span></a>
+      <a onclick="showPanel('schedule')" id="nav-schedule">🗓️ スケジュール</a>
+      <a onclick="showPanel('recurring')" id="nav-recurring">🔁 定期予約</a>
+      <a onclick="showPanel('facilities')" id="nav-facilities">📍 施設管理</a>
+      <a onclick="openTournamentTool()" id="nav-tournament">🏆 大会案内ツール</a>
+      <a onclick="showPanel('shop')" id="nav-shop">🛒 物販管理 <span class="badge wip">準備中</span></a>
+    </nav>
+    <div class="aside-footer"><button onclick="doLogout()">🚪 ログアウト</button></div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="topbar-title" id="panel_title">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="gcal-status" id="gcal_status">Googleカレンダー: 未連携</span>
+        <button class="gcal-btn" onclick="connectGCal()">G カレンダー連携</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- ダッシュボード -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-num" id="stat_pending">—</div><div class="stat-label">承認待ち</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat_approved">—</div><div class="stat-label">承認済み（今月）</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat_revenue">—</div><div class="stat-label">今月収益</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat_total">—</div><div class="stat-label">累計予約</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📬 最近の申請</div>
+          <div id="recent_list">読み込み中...</div>
+        </div>
+      </div>
+
+      <!-- 予約管理 -->
+      <div class="panel" id="panel-reservations">
+        <div class="card">
+          <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>📋 予約一覧</span>
+            <div>
+              <select id="res_filter" onchange="loadReservations()" style="padding:5px 10px;border-radius:6px;border:1.5px solid #ddd;font-size:.82rem">
+                <option value="all">すべて</option>
+                <option value="pending">承認待ち</option>
+                <option value="approved">承認済み</option>
+                <option value="rejected">却下</option>
+              </select>
+              &nbsp;<button class="btn btn-blue" onclick="loadReservations()">🔄 更新</button>
+            </div>
+          </div>
+          <div id="res_msg"></div>
+          <div id="res_table" style="overflow-x:auto"><div style="padding:20px;text-align:center;color:#888">読み込み中...</div></div>
+        </div>
+        <!-- LINE生成 -->
+        <div class="card" id="line_card" style="display:none">
+          <div class="card-title">📱 LINEメッセージ生成</div>
+          <div class="line-box" id="line_text"></div>
+          <button class="copy-btn" onclick="copyLine()">📋 コピー</button>
+        </div>
+      </div>
+
+      <!-- スケジュール管理 -->
+      <div class="panel" id="panel-schedule">
+        <div class="card">
+          <div class="card-title">🚫 ブロック時間追加</div>
+          <div id="sched_msg"></div>
+          <div class="form-grid">
+            <div class="form-group"><label>日付</label><input type="date" id="s_date"></div>
+            <div class="form-group">
+              <label>場所（施設）</label>
+              <select id="s_facility">
+                <option value="">全施設共通</option>
+              </select>
+            </div>
+            <div class="form-group"><label>開始時間</label><input type="time" id="s_start" step="1800"></div>
+            <div class="form-group"><label>終了時間</label><input type="time" id="s_end" step="1800"></div>
+          </div>
+          <div class="form-group"><label>メモ</label><input type="text" id="s_memo" placeholder="大会、プライベート等"></div>
+          <button class="btn btn-primary" onclick="addBlock()">＋ 追加</button>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 登録済みブロック時間</div>
+          <div id="block_list"><div style="color:#888;padding:10px">登録済みのブロック時間はありません</div></div>
+        </div>
+      </div>
+
+      <!-- 定期予約 -->
+      <div class="panel" id="panel-recurring">
+        <div class="card">
+          <div class="card-title">🔁 定期ブロック追加</div>
+          <div id="rec_msg"></div>
+          <div class="form-group"><label>タイトル</label><input type="text" id="r_title" placeholder="例: 毎週土曜練習"></div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>繰り返し</label>
+              <select id="r_type" onchange="updateRecurringUI()">
+                <option value="weekly">毎週</option>
+                <option value="monthly">毎月</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label id="r_day_label">曜日</label>
+              <select id="r_day">
+                <option value="0">日曜日</option>
+                <option value="2">火曜日</option>
+                <option value="3">水曜日</option>
+                <option value="4">木曜日</option>
+                <option value="5">金曜日</option>
+                <option value="6">土曜日</option>
+              </select>
+            </div>
+            <div class="form-group"><label>開始時間</label><input type="time" id="r_start" step="1800"></div>
+            <div class="form-group"><label>終了時間</label><input type="time" id="r_end" step="1800"></div>
+          </div>
+          <div class="form-group">
+            <label>施設</label>
+            <select id="r_facility"><option value="">全施設共通</option></select>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>有効期間 開始日</label><input type="date" id="r_sdate"></div>
+            <div class="form-group"><label>有効期間 終了日（任意）</label><input type="date" id="r_edate"></div>
+          </div>
+          <div class="form-group"><label>メモ</label><input type="text" id="r_memo" placeholder="備考"></div>
+          <button class="btn btn-primary" onclick="addRecurring()">🔁 定期ブロック追加</button>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 登録済み定期ブロック</div>
+          <div id="rec_list"><div style="color:#888;padding:10px">登録済みの定期ブロックはありません</div></div>
+        </div>
+      </div>
+
+      <!-- 施設管理 -->
+      <div class="panel" id="panel-facilities">
+        <div class="card">
+          <div class="card-title">📍 施設追加</div>
+          <div id="fac_msg"></div>
+          <div class="form-grid">
+            <div class="form-group"><label>施設名 *</label><input type="text" id="f_name" placeholder="○○体育センター"></div>
+            <div class="form-group"><label>電話番号</label><input type="tel" id="f_phone" placeholder="0256-00-0000"></div>
+          </div>
+          <div class="form-group"><label>住所</label><input type="text" id="f_address" placeholder="新潟県○○市..."></div>
+          <div class="form-group"><label>URL</label><input type="url" id="f_url" placeholder="https://..."></div>
+          <button class="btn btn-primary" onclick="addFacility()">＋ 追加</button>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 施設一覧</div>
+          <div id="fac_list">読み込み中...</div>
+        </div>
+      </div>
+
+      <!-- 大会案内ツール（このパネルは通常開かず外部リンクで開く） -->
+      <div class="panel" id="panel-tournament">
+        <div class="card">
+          <div class="card-title">🏆 大会案内ツール</div>
+          <a class="tournament-link" id="tournament_link" href="#" target="_blank">🏆 新潟卓球ラボ 大会案内ツールを開く</a>
+          <p style="font-size:.82rem;color:#888;margin-top:12px;text-align:center">別タブで大会案内ツールが開きます</p>
+        </div>
+      </div>
+
+      <!-- 物販管理 -->
+      <div class="panel" id="panel-shop">
+        <div class="card">
+          <div class="card-title">🛒 物販管理</div>
+          <div class="shop-placeholder">
+            <div class="icon">🚧</div>
+            <div style="font-size:1.1rem;font-weight:700;color:#1a3a5c;margin-bottom:8px">準備中</div>
+            <div style="font-size:.88rem;color:#888">物販機能は現在開発中です。<br>ウェア・用具等の販売管理を予定しています。</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://lwbysesbbehholrojonc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3YnlzZXNiYmVoaG9scm9qb25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MTk5NjUsImV4cCI6MjA1NjM5NTk2NX0.Y_9VWiABPQJPQVBJHFJc-LmfQTtFgUFoIFWjJn8b57A';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const GOOGLE_CLIENT_ID = '627441982548-g2u9rjkf62dlh50ldrdlqiqji2t7lv2k.apps.googleusercontent.com';
+// 大会案内ツールURL（あとで差し替え可能）
+const TOURNAMENT_URL = 'https://www.genspark.ai/agents?id=tournament-tool';
+
+let gCalToken = null;
+let facilitiesList = [];
+
+// ============================================================
+// ログイン
+// ============================================================
+async function doLogin() {
+  const email = document.getElementById('login_email').value;
+  const pass = document.getElementById('login_pass').value;
+  const {error} = await db.auth.signInWithPassword({email, password: pass});
+  if (error) {
+    document.getElementById('login_err').textContent = 'ログイン失敗: ' + error.message;
+  } else {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    initApp();
+  }
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+  location.reload();
+}
+
+// ============================================================
+// アプリ初期化
+// ============================================================
+async function initApp() {
+  document.getElementById('tournament_link').href = TOURNAMENT_URL;
+  await loadFacilities();
+  await loadStats();
+  await loadReservations();
+  await loadBlocks();
+  await loadRecurring();
+  populateFacilitySelects();
+}
+
+// ============================================================
+// 施設
+// ============================================================
+async function loadFacilities() {
+  const {data} = await db.from('facilities').select('*').order('created_at');
+  facilitiesList = data || [];
+  renderFacilitiesList();
+}
+
+function populateFacilitySelects() {
+  ['s_facility','r_facility'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">全施設共通</option>';
+    facilitiesList.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = f.name;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function renderFacilitiesList() {
+  const el = document.getElementById('fac_list');
+  if (facilitiesList.length === 0) { el.innerHTML = '<div style="color:#888;padding:10px">施設が登録されていません</div>'; return; }
+  let html = '<table><thead><tr><th>施設名</th><th>住所</th><th>電話</th><th>操作</th></tr></thead><tbody>';
+  facilitiesList.forEach(f => {
+    html += `<tr><td>${f.name}</td><td>${f.address||'-'}</td><td>${f.phone||'-'}</td><td><button class="btn btn-delete" onclick="deleteFacility('${f.id}')">削除</button></td></tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function addFacility() {
+  const name = document.getElementById('f_name').value.trim();
+  if (!name) { showMsg('fac_msg','施設名を入力してください','error'); return; }
+  const {error} = await db.from('facilities').insert([{
+    name, address: document.getElementById('f_address').value,
+    phone: document.getElementById('f_phone').value, url: document.getElementById('f_url').value
+  }]);
+  if (error) { showMsg('fac_msg','エラー: '+error.message,'error'); return; }
+  showMsg('fac_msg','施設を追加しました','success');
+  document.getElementById('f_name').value=''; document.getElementById('f_address').value='';
+  document.getElementById('f_phone').value=''; document.getElementById('f_url').value='';
+  await loadFacilities();
+  populateFacilitySelects();
+}
+
+async function deleteFacility(id) {
+  if (!confirm('削除しますか？')) return;
+  await db.from('facilities').delete().eq('id',id);
+  await loadFacilities();
+  populateFacilitySelects();
+}
+
+// ============================================================
+// 統計
+// ============================================================
+async function loadStats() {
+  const now = new Date();
+  const monthStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const [pendRes, apprRes, totRes] = await Promise.all([
+    db.from('lesson_requests').select('id',{count:'exact'}).eq('status','pending'),
+    db.from('lesson_requests').select('id,price').eq('status','approved').gte('lesson_date', monthStr+'-01'),
+    db.from('lesson_requests').select('id',{count:'exact'})
+  ]);
+  const pending = pendRes.count || 0;
+  const approved = (apprRes.data||[]).length;
+  const revenue = (apprRes.data||[]).reduce((s,r) => s+(r.price||0), 0);
+  const total = totRes.count || 0;
+  document.getElementById('stat_pending').textContent = pending;
+  document.getElementById('stat_approved').textContent = approved;
+  document.getElementById('stat_revenue').textContent = '¥'+revenue.toLocaleString();
+  document.getElementById('stat_total').textContent = total;
+  const badge = document.getElementById('pending_badge');
+  if (pending > 0) { badge.style.display=''; badge.textContent=pending; } else badge.style.display='none';
+  loadRecentList();
+}
+
+async function loadRecentList() {
+  const {data} = await db.from('lesson_requests').select('*').order('created_at',{ascending:false}).limit(5);
+  const el = document.getElementById('recent_list');
+  if (!data || data.length===0) { el.innerHTML='<div style="color:#888;padding:10px">申請はありません</div>'; return; }
+  let html = '<table><thead><tr><th>日時</th><th>施設</th><th>申請者</th><th>状態</th></tr></thead><tbody>';
+  data.forEach(r => {
+    const badge = `<span class="status-badge ${r.status}">${{pending:'承認待ち',approved:'承認済み',rejected:'却下'}[r.status]||r.status}</span>`;
+    html += `<tr><td>${r.lesson_date} ${r.start_time?.slice(0,5)||''}</td><td>${r.facility_name}</td><td>${r.applicant_name}</td><td>${badge}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+// ============================================================
+// 予約管理
+// ============================================================
+async function loadReservations() {
+  const filter = document.getElementById('res_filter')?.value || 'all';
+  let q = db.from('lesson_requests').select('*').order('lesson_date',{ascending:false});
+  if (filter !== 'all') q = q.eq('status', filter);
+  const {data, error} = await q;
+  const el = document.getElementById('res_table');
+  if (error) { el.innerHTML = `<div class="msg error">読み込みエラー: ${error.message}</div>`; return; }
+  if (!data || data.length===0) { el.innerHTML='<div style="color:#888;padding:20px;text-align:center">予約データがありません</div>'; return; }
+  const catLabel = {adult:'社会人',junior:'ジュニア'};
+  let html = '<table><thead><tr><th>日時</th><th>施設</th><th>申請者</th><th>区分/人数</th><th>時間</th><th>料金</th><th>状態</th><th>操作</th></tr></thead><tbody>';
+  data.forEach(r => {
+    const badge = `<span class="status-badge ${r.status}">${{pending:'承認待ち',approved:'承認済み',rejected:'却下'}[r.status]||r.status}</span>`;
+    const ops = r.status === 'pending' ?
+      `<button class="btn btn-approve" onclick="approveRes('${r.id}')">✅</button> <button class="btn btn-reject" onclick="rejectRes('${r.id}')">❌</button>` :
+      `<button class="btn btn-delete" onclick="deleteRes('${r.id}')">🗑</button>`;
+    html += `<tr>
+      <td>${r.lesson_date||''} ${r.start_time?.slice(0,5)||''}</td>
+      <td>${r.facility_name}</td>
+      <td>${r.applicant_name}<br><small style="color:#888">${r.applicant_phone}</small></td>
+      <td>${catLabel[r.category]||r.category}/${r.participants}名</td>
+      <td>${r.duration_minutes}分</td>
+      <td>¥${(r.price||0).toLocaleString()}</td>
+      <td>${badge}</td>
+      <td>${ops}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function approveRes(id) {
+  const {data} = await db.from('lesson_requests').select('*').eq('id',id).single();
+  if (!data) return;
+  await db.from('lesson_requests').update({status:'approved'}).eq('id',id);
+  showMsg('res_msg','承認しました','success');
+  // Googleカレンダーに登録
+  if (gCalToken) createGCalEvent(data);
+  // LINEメッセージ生成
+  generateLine(data);
+  await loadReservations();
+  await loadStats();
+}
+
+async function rejectRes(id) {
+  await db.from('lesson_requests').update({status:'rejected'}).eq('id',id);
+  showMsg('res_msg','却下しました','success');
+  await loadReservations();
+  await loadStats();
+}
+
+async function deleteRes(id) {
+  if (!confirm('削除しますか？')) return;
+  await db.from('lesson_requests').delete().eq('id',id);
+  await loadReservations();
+  await loadStats();
+}
+
+// ============================================================
+// LINEメッセージ
+// ============================================================
+function generateLine(r) {
+  const catLabel = r.category === 'junior' ? 'ジュニア' : '社会人';
+  const msg = `【予約確定】新潟卓球ラボ
+
+📅 日時: ${r.lesson_date} ${r.start_time?.slice(0,5)}〜${r.end_time?.slice(0,5)}
+📍 施設: ${r.facility_name}
+👤 氏名: ${r.applicant_name}様
+📞 電話: ${r.applicant_phone}
+👥 区分: ${catLabel} ${r.participants}名
+⏰ 時間: ${r.duration_minutes}分
+💴 料金: ¥${(r.price||0).toLocaleString()}（施設利用料別途）
+
+ご予約ありがとうございます！`;
+  document.getElementById('line_text').textContent = msg;
+  document.getElementById('line_card').style.display = '';
+}
+
+function copyLine() {
+  const txt = document.getElementById('line_text').textContent;
+  navigator.clipboard.writeText(txt).then(() => alert('コピーしました！'));
+}
+
+// ============================================================
+// ブロック時間
+// ============================================================
+async function addBlock() {
+  const date = document.getElementById('s_date').value;
+  const start = document.getElementById('s_start').value;
+  const end = document.getElementById('s_end').value;
+  if (!date || !start || !end) { showMsg('sched_msg','日付・時間を入力してください','error'); return; }
+  const facId = document.getElementById('s_facility').value;
+  const facName = facId ? (facilitiesList.find(f=>f.id===facId)?.name||'') : '全施設共通';
+  const {error} = await db.from('blocked_times').insert([{
+    block_date: date, start_time: start+':00', end_time: end+':00',
+    facility_id: facId||null, facility_name: facName,
+    memo: document.getElementById('s_memo').value
+  }]);
+  if (error) { showMsg('sched_msg','エラー: '+error.message,'error'); return; }
+  showMsg('sched_msg','追加しました','success');
+  document.getElementById('s_date').value=''; document.getElementById('s_start').value='';
+  document.getElementById('s_end').value=''; document.getElementById('s_memo').value='';
+  await loadBlocks();
+}
+
+async function loadBlocks() {
+  const {data} = await db.from('blocked_times').select('*').order('block_date',{ascending:false}).limit(50);
+  const el = document.getElementById('block_list');
+  if (!data || data.length===0) { el.innerHTML='<div style="color:#888;padding:10px">登録済みのブロック時間はありません</div>'; return; }
+  let html = '<table><thead><tr><th>日付</th><th>時間</th><th>施設</th><th>メモ</th><th>操作</th></tr></thead><tbody>';
+  data.forEach(b => {
+    html += `<tr><td>${b.block_date}</td><td>${b.start_time?.slice(0,5)}〜${b.end_time?.slice(0,5)}</td><td>${b.facility_name||'全施設'}</td><td>${b.memo||'-'}</td><td><button class="btn btn-delete" onclick="deleteBlock('${b.id}')">削除</button></td></tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function deleteBlock(id) {
+  await db.from('blocked_times').delete().eq('id',id);
+  await loadBlocks();
+}
+
+// ============================================================
+// 定期ブロック
+// ============================================================
+function updateRecurringUI() {
+  const type = document.getElementById('r_type').value;
+  const label = document.getElementById('r_day_label');
+  const sel = document.getElementById('r_day');
+  if (type === 'weekly') {
+    label.textContent = '曜日';
+    sel.innerHTML = '<option value="0">日曜日</option><option value="2">火曜日</option><option value="3">水曜日</option><option value="4">木曜日</option><option value="5">金曜日</option><option value="6">土曜日</option>';
+  } else {
+    label.textContent = '日付（毎月）';
+    sel.innerHTML = '';
+    for (let i=1;i<=31;i++) { const o=document.createElement('option'); o.value=i; o.textContent=i+'日'; sel.appendChild(o); }
+  }
+}
+
+async function addRecurring() {
+  const title = document.getElementById('r_title').value.trim();
+  const type = document.getElementById('r_type').value;
+  const day = parseInt(document.getElementById('r_day').value);
+  const start = document.getElementById('r_start').value;
+  const end = document.getElementById('r_end').value;
+  const sdate = document.getElementById('r_sdate').value;
+  if (!title || !start || !end || !sdate) { showMsg('rec_msg','タイトル・時間・開始日は必須です','error'); return; }
+  const facId = document.getElementById('r_facility').value;
+  const facName = facId ? (facilitiesList.find(f=>f.id===facId)?.name||'') : '全施設共通';
+  const {error} = await db.from('recurring_blocks').insert([{
+    title, recurrence_type: type, recurrence_day: day,
+    start_time: start+':00', end_time: end+':00',
+    facility_id: facId||null, facility_name: facName,
+    start_date: sdate, end_date: document.getElementById('r_edate').value||null,
+    memo: document.getElementById('r_memo').value
+  }]);
+  if (error) { showMsg('rec_msg','エラー: '+error.message,'error'); return; }
+  showMsg('rec_msg','定期ブロックを追加しました','success');
+  document.getElementById('r_title').value=''; document.getElementById('r_start').value='';
+  document.getElementById('r_end').value=''; document.getElementById('r_sdate').value='';
+  document.getElementById('r_edate').value=''; document.getElementById('r_memo').value='';
+  await loadRecurring();
+}
+
+async function loadRecurring() {
+  const {data} = await db.from('recurring_blocks').select('*').order('created_at',{ascending:false});
+  const el = document.getElementById('rec_list');
+  if (!data || data.length===0) { el.innerHTML='<div style="color:#888;padding:10px">登録済みの定期ブロックはありません</div>'; return; }
+  const dow = ['日','月','火','水','木','金','土'];
+  let html = '<table><thead><tr><th>タイトル</th><th>繰り返し</th><th>施設</th><th>時間</th><th>期間</th><th>操作</th></tr></thead><tbody>';
+  data.forEach(r => {
+    const typeLabel = r.recurrence_type === 'weekly' ? `毎週${dow[r.recurrence_day]}曜日` : `毎月${r.recurrence_day}日`;
+    html += `<tr><td>${r.title}</td><td>${typeLabel}</td><td>${r.facility_name||'全施設'}</td><td>${r.start_time?.slice(0,5)}〜${r.end_time?.slice(0,5)}</td><td>${r.start_date}〜${r.end_date||'無期限'}</td><td><button class="btn btn-delete" onclick="deleteRecurring('${r.id}')">削除</button></td></tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function deleteRecurring(id) {
+  if (!confirm('削除しますか？')) return;
+  await db.from('recurring_blocks').delete().eq('id',id);
+  await loadRecurring();
+}
+
+// ============================================================
+// Googleカレンダー
+// ============================================================
+function connectGCal() {
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: location.origin + location.pathname,
+    response_type: 'token',
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    prompt: 'consent'
+  });
+  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params;
+}
+
+function createGCalEvent(r) {
+  if (!gCalToken) return;
+  const startDT = r.lesson_date + 'T' + r.start_time;
+  const endDT = r.lesson_date + 'T' + r.end_time;
+  const catLabel = r.category === 'junior' ? 'ジュニア' : '社会人';
+  fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+    method: 'POST',
+    headers: {'Authorization':'Bearer '+gCalToken,'Content-Type':'application/json'},
+    body: JSON.stringify({
+      summary: `【TTラボ】${r.applicant_name}様 レッスン（${catLabel}${r.participants}名）`,
+      location: r.facility_name,
+      description: `氏名: ${r.applicant_name}\n電話: ${r.applicant_phone}\nメール: ${r.applicant_email}\n時間: ${r.duration_minutes}分\n料金: ¥${r.price}\n区分: ${catLabel}/${r.participants}名`,
+      start: {dateTime: startDT, timeZone: 'Asia/Tokyo'},
+      end:   {dateTime: endDT,   timeZone: 'Asia/Tokyo'},
+      reminders: {useDefault:false, overrides:[{method:'email',minutes:120},{method:'popup',minutes:60}]}
+    })
+  }).then(res => res.json()).then(ev => {
+    if (ev.id) db.from('lesson_requests').update({google_event_id:ev.id}).eq('id',r.id);
+  });
+}
+
+// ============================================================
+// 大会案内ツール
+// ============================================================
+function openTournamentTool() {
+  window.open(TOURNAMENT_URL, '_blank');
+}
+
+// ============================================================
+// ナビ
+// ============================================================
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('panel-'+name)?.classList.add('active');
+  document.getElementById('nav-'+name)?.classList.add('active');
+  const titles = {dashboard:'ダッシュボード',reservations:'予約管理',schedule:'スケジュール管理',
+    recurring:'定期予約',facilities:'施設管理',tournament:'大会案内ツール',shop:'物販管理（準備中）'};
+  document.getElementById('panel_title').textContent = titles[name] || '';
+}
+
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<div class="msg ${type}">${msg}</div>`;
+  setTimeout(() => el.innerHTML='', 4000);
+}
+
+// OAuthコールバック処理
+const hash = new URLSearchParams(location.hash.slice(1));
+if (hash.get('access_token')) {
+  gCalToken = hash.get('access_token');
+  history.replaceState(null,'',location.pathname);
+  document.getElementById('gcal_status').textContent = 'Googleカレンダー: 連携済み';
+  document.getElementById('gcal_status').className = 'gcal-status linked';
+}
+
+// セッション確認
+db.auth.getSession().then(({data:{session}}) => {
+  if (session) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    initApp();
+  }
+});
+</script>
+</body>
+</html>
