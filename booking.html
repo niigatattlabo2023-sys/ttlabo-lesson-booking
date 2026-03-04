@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レッスン予約 - 個人レッスン予約フォーム</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .booking-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .search-pattern-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .pattern-card {
+            background: var(--light-bg);
+            padding: 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .pattern-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+        
+        .pattern-card.active {
+            border-color: var(--primary-color);
+            background: var(--white);
+        }
+        
+        .pattern-card i {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .pattern-card h3 {
+            color: var(--secondary-color);
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .pattern-card p {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+        
+        .form-section {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .form-section.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        
+        .form-group label .required {
+            color: var(--danger-color);
+            margin-left: 4px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .radio-group, .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .radio-option, .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .radio-option input, .checkbox-option input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .calendar-container {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 15px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .calendar-day:hover:not(.disabled):not(.header) {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+        
+        .calendar-day.selected {
+            background: var(--primary-color);
+            color: var(--white);
+            font-weight: 600;
+        }
+        
+        .calendar-day.disabled {
+            background: var(--light-bg);
+            color: var(--text-light);
+            cursor: not-allowed;
+        }
+        
+        .calendar-day.header {
+            font-weight: 600;
+            background: var(--secondary-color);
+            color: var(--white);
+            cursor: default;
+        }
+        
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .time-slot {
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .time-slot:hover:not(.disabled) {
+            border-color: var(--primary-color);
+            background: var(--light-bg);
+        }
+        
+        .time-slot.selected {
+            background: var(--primary-color);
+            color: var(--white);
+            border-color: var(--primary-color);
+        }
+        
+        .time-slot.disabled {
+            background: var(--light-bg);
+            color: var(--text-light);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .facility-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .facility-item {
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .facility-item:hover:not(.disabled) {
+            border-color: var(--primary-color);
+            background: var(--light-bg);
+        }
+        
+        .facility-item.selected {
+            border-color: var(--primary-color);
+            background: var(--light-bg);
+        }
+        
+        .facility-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .facility-item h4 {
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+        
+        .facility-item p {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+        
+        .price-display {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: var(--white);
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .price-display h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .price-display .amount {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .price-display .breakdown {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: var(--success-color);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-submit:hover:not(:disabled) {
+            background: #05C090;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(6, 214, 160, 0.4);
+        }
+        
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: var(--primary-color);
+        }
+        
+        @media (max-width: 768px) {
+            .search-pattern-selector {
+                grid-template-columns: 1fr;
+            }
+            
+            .calendar-container {
+                font-size: 12px;
+            }
+            
+            .price-display .amount {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container booking-container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-table-tennis racket-icon"></i>
+                <h1>レッスン予約</h1>
+            </div>
+        </header>
+
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i>
+            トップページに戻る
+        </a>
+
+        <div class="main-content">
+            <h2 style="margin-bottom: 25px; color: var(--secondary-color);">
+                <i class="fas fa-search"></i> 検索方法を選択
+            </h2>
+            
+            <div class="search-pattern-selector">
+                <div class="pattern-card" data-pattern="facility">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>施設から選ぶ</h3>
+                    <p>まず施設を選択し、その後空き日時を確認します</p>
+                </div>
+                <div class="pattern-card" data-pattern="datetime">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h3>日時から選ぶ</h3>
+                    <p>まず希望日時を選択し、移動可能な施設を表示します</p>
+                </div>
+            </div>
+
+            <!-- パターンA: 施設から選ぶ -->
+            <div id="pattern-facility-form" class="form-section">
+                <h3 style="color: var(--secondary-color); margin-bottom: 20px;">
+                    <i class="fas fa-map-marker-alt"></i> 施設を選択
+                </h3>
+                <div id="facility-list" class="facility-list">
+                    <!-- 施設リストはJSで動的生成 -->
+                </div>
+            </div>
+
+            <!-- パターンB: 日時から選ぶ -->
+            <div id="pattern-datetime-form" class="form-section">
+                <h3 style="color: var(--secondary-color); margin-bottom: 20px;">
+                    <i class="fas fa-calendar-alt"></i> 希望日時を選択
+                </h3>
+                <div class="form-group">
+                    <label>希望日<span class="required">*</span></label>
+                    <input type="date" id="desired-date" class="form-control" min="">
+                </div>
+                <div class="form-group">
+                    <label>希望開始時刻<span class="required">*</span></label>
+                    <select id="desired-time" class="form-control">
+                        <option value="">選択してください</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>レッスン時間<span class="required">*</span></label>
+                    <select id="desired-duration" class="form-control">
+                        <option value="">選択してください</option>
+                        <option value="60">1時間</option>
+                        <option value="90">1時間30分</option>
+                        <option value="120">2時間</option>
+                        <option value="150">2時間30分</option>
+                        <option value="180">3時間</option>
+                    </select>
+                </div>
+                <button id="check-facilities-btn" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-search"></i>
+                    移動可能な施設を検索
+                </button>
+                
+                <div id="available-facilities" style="margin-top: 30px; display: none;">
+                    <h4 style="color: var(--secondary-color); margin-bottom: 15px;">移動可能な施設</h4>
+                    <div id="available-facilities-list" class="facility-list"></div>
+                </div>
+            </div>
+
+            <!-- 共通フォーム（施設選択後） -->
+            <div id="common-form" class="form-section">
+                <h3 style="color: var(--secondary-color); margin-bottom: 20px;">
+                    <i class="fas fa-calendar-check"></i> 日時選択
+                </h3>
+                
+                <div id="selected-facility-display" style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>選択された施設：</strong> <span id="selected-facility-name"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label>希望日<span class="required">*</span></label>
+                    <input type="date" id="lesson-date" class="form-control" min="">
+                </div>
+                
+                <div class="form-group">
+                    <label>開始時刻<span class="required">*</span></label>
+                    <div id="time-slots" class="time-slots"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>レッスン時間<span class="required">*</span></label>
+                    <select id="duration" class="form-control">
+                        <option value="">選択してください</option>
+                        <option value="60">1時間</option>
+                        <option value="90">1時間30分</option>
+                        <option value="120">2時間</option>
+                        <option value="150">2時間30分</option>
+                        <option value="180">3時間</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- レッスン詳細フォーム -->
+            <div id="details-form" class="form-section">
+                <h3 style="color: var(--secondary-color); margin-bottom: 20px;">
+                    <i class="fas fa-user"></i> レッスン詳細
+                </h3>
+                
+                <div class="form-group">
+                    <label>お名前<span class="required">*</span></label>
+                    <input type="text" id="customer-name" class="form-control" placeholder="山田太郎">
+                </div>
+                
+                <div class="form-group">
+                    <label>区分<span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="customer-type" value="junior">
+                            <span>ジュニア（中学生以下）</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="customer-type" value="adult">
+                            <span>社会人</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>レッスン種別<span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="lesson-type" value="individual">
+                            <span>個人レッスン</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="lesson-type" value="group">
+                            <span>グループレッスン</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>参加人数<span class="required">*</span></label>
+                    <select id="participants" class="form-control">
+                        <option value="">選択してください</option>
+                        <option value="1">1名</option>
+                        <option value="2">2名</option>
+                        <option value="3">3名</option>
+                        <option value="4">4名</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>施設予約担当<span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="booking-by" value="customer">
+                            <span>自分で予約する</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="booking-by" value="coach">
+                            <span>コーチに予約を依頼</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>備考（任意）</label>
+                    <textarea id="notes" class="form-control" rows="4" placeholder="その他ご要望などあればお書きください"></textarea>
+                </div>
+                
+                <div id="price-display" class="price-display" style="display: none;">
+                    <h3>コーチ料金</h3>
+                    <div class="amount">¥0</div>
+                    <div class="breakdown"></div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3);">
+                        <small>※施設利用料は別途当日ご確認ください</small>
+                    </div>
+                </div>
+                
+                <button id="submit-btn" class="btn-submit" style="margin-top: 20px;" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                    予約申請を送信
+                </button>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2026 ともきコーチ個人レッスン. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/pricing.js"></script>
+    <script src="js/booking.js"></script>
+</body>
+</html>
