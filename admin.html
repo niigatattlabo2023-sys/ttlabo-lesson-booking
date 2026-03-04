@@ -216,9 +216,30 @@ tr:hover td{background:#f5f8ff}
                 <option value="monthly">毎月</option>
               </select>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="r_day_wrap">
               <label id="r_day_label">曜日</label>
               <select id="r_day">
+                <option value="0">日曜日</option>
+                <option value="2">火曜日</option>
+                <option value="3">水曜日</option>
+                <option value="4">木曜日</option>
+                <option value="5">金曜日</option>
+                <option value="6">土曜日</option>
+              </select>
+            </div>
+            <div class="form-group" id="r_week_wrap" style="display:none">
+              <label>第○週</label>
+              <select id="r_week">
+                <option value="1">第1</option>
+                <option value="2">第2</option>
+                <option value="3">第3</option>
+                <option value="4">第4</option>
+                <option value="5">第5</option>
+              </select>
+            </div>
+            <div class="form-group" id="r_weekday_wrap" style="display:none">
+              <label>曜日</label>
+              <select id="r_weekday">
                 <option value="0">日曜日</option>
                 <option value="2">火曜日</option>
                 <option value="3">水曜日</option>
@@ -558,35 +579,47 @@ async function deleteBlock(id) {
 // ============================================================
 function updateRecurringUI() {
   const type = document.getElementById('r_type').value;
-  const label = document.getElementById('r_day_label');
-  const sel = document.getElementById('r_day');
+  const dayWrap = document.getElementById('r_day_wrap');
+  const weekWrap = document.getElementById('r_week_wrap');
+  const weekdayWrap = document.getElementById('r_weekday_wrap');
   if (type === 'weekly') {
-    label.textContent = '曜日';
-    sel.innerHTML = '<option value="0">日曜日</option><option value="2">火曜日</option><option value="3">水曜日</option><option value="4">木曜日</option><option value="5">金曜日</option><option value="6">土曜日</option>';
+    // 毎週：曜日セレクトのみ表示
+    document.getElementById('r_day_label').textContent = '曜日';
+    dayWrap.style.display = '';
+    weekWrap.style.display = 'none';
+    weekdayWrap.style.display = 'none';
   } else {
-    label.textContent = '日付（毎月）';
-    sel.innerHTML = '';
-    for (let i=1;i<=31;i++) { const o=document.createElement('option'); o.value=i; o.textContent=i+'日'; sel.appendChild(o); }
+    // 毎月：第○週＋曜日の2セレクト
+    dayWrap.style.display = 'none';
+    weekWrap.style.display = '';
+    weekdayWrap.style.display = '';
   }
 }
 
 async function addRecurring() {
   const title = document.getElementById('r_title').value.trim();
   const type = document.getElementById('r_type').value;
-  const day = parseInt(document.getElementById('r_day').value);
   const start = document.getElementById('r_start').value;
   const end = document.getElementById('r_end').value;
   const sdate = document.getElementById('r_sdate').value;
   if (!title || !start || !end || !sdate) { showMsg('rec_msg','タイトル・時間・開始日は必須です','error'); return; }
   const facId = document.getElementById('r_facility').value;
   const facName = facId ? (facilitiesList.find(f=>f.id===facId)?.name||'') : '全施設共通';
-  const {error} = await db.from('recurring_blocks').insert([{
-    title, recurrence_type: type, recurrence_day: day,
+  let insertData = {
+    title, recurrence_type: type,
     start_time: start+':00', end_time: end+':00',
     facility_id: facId||null, facility_name: facName,
     start_date: sdate, end_date: document.getElementById('r_edate').value||null,
     memo: document.getElementById('r_memo').value
-  }]);
+  };
+  if (type === 'weekly') {
+    insertData.recurrence_day = parseInt(document.getElementById('r_day').value);
+    insertData.week_of_month = null;
+  } else {
+    insertData.recurrence_day = parseInt(document.getElementById('r_weekday').value);
+    insertData.week_of_month = parseInt(document.getElementById('r_week').value);
+  }
+  const {error} = await db.from('recurring_blocks').insert([insertData]);
   if (error) { showMsg('rec_msg','エラー: '+error.message,'error'); return; }
   showMsg('rec_msg','定期ブロックを追加しました','success');
   document.getElementById('r_title').value=''; document.getElementById('r_start').value='';
@@ -602,7 +635,9 @@ async function loadRecurring() {
   const dow = ['日','月','火','水','木','金','土'];
   let html = '<table><thead><tr><th>タイトル</th><th>繰り返し</th><th>施設</th><th>時間</th><th>期間</th><th>操作</th></tr></thead><tbody>';
   data.forEach(r => {
-    const typeLabel = r.recurrence_type === 'weekly' ? `毎週${dow[r.recurrence_day]}曜日` : `毎月${r.recurrence_day}日`;
+    const typeLabel = r.recurrence_type === 'weekly'
+      ? `毎週${dow[r.recurrence_day]}曜日`
+      : `毎月第${r.week_of_month}${dow[r.recurrence_day]}曜日`;
     html += `<tr><td>${r.title}</td><td>${typeLabel}</td><td>${r.facility_name||'全施設'}</td><td>${r.start_time?.slice(0,5)}〜${r.end_time?.slice(0,5)}</td><td>${r.start_date}〜${r.end_date||'無期限'}</td><td><button class="btn btn-delete" onclick="deleteRecurring('${r.id}')">削除</button></td></tr>`;
   });
   html += '</tbody></table>';
@@ -643,7 +678,7 @@ function createGCalEvent(r) {
       description: `氏名: ${r.applicant_name}\n電話: ${r.applicant_phone}\nメール: ${r.applicant_email}\n時間: ${r.duration_minutes}分\n料金: ¥${r.price}\n区分: ${catLabel}/${r.participants}名`,
       start: {dateTime: startDT, timeZone: 'Asia/Tokyo'},
       end:   {dateTime: endDT,   timeZone: 'Asia/Tokyo'},
-      reminders: {useDefault:false, overrides:[{method:'email',minutes:120},{method:'popup',minutes:60}]}
+      reminders: {useDefault:false, overrides:[{method:'email',minutes:120},{method:'popup',minutes:120}]}
     })
   }).then(res => res.json()).then(ev => {
     if (ev.id) db.from('lesson_requests').update({google_event_id:ev.id}).eq('id',r.id);

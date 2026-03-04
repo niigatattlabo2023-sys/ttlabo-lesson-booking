@@ -557,7 +557,10 @@ async function submitForm(e, p) {
   btn.disabled = false;
   btn.textContent = '📨 予約を申請する';
   if (error) {
-    msgEl.innerHTML = '<div class="msg error">送信エラー: '+error.message+'</div>';
+    const detail = error.details ? ` (${error.details})` : '';
+    const hint = error.hint ? `<br>ヒント: ${error.hint}` : '';
+    const code = error.code ? ` [code: ${error.code}]` : '';
+    msgEl.innerHTML = `<div class="msg error">送信エラー: ${error.message}${detail}${code}${hint}</div>`;
   } else {
     msgEl.innerHTML = '<div class="msg success">✅ 予約申請が完了しました！コーチからの連絡をお待ちください。</div>';
     document.getElementById(p+'_form').reset();
