@@ -499,12 +499,36 @@ function populateFacilitySelects() {
 function renderFacilitiesList() {
   const el = document.getElementById('fac_list');
   if (facilitiesList.length === 0) { el.innerHTML = '<div style="color:#888;padding:10px">施設が登録されていません</div>'; return; }
-  let html = '<table><thead><tr><th>施設名</th><th>住所</th><th>電話</th><th>操作</th></tr></thead><tbody>';
+  let html = '<table><thead><tr><th>施設名</th><th>住所</th><th>電話</th><th>予約ページに表示</th><th>操作</th></tr></thead><tbody>';
   facilitiesList.forEach(f => {
-    html += `<tr><td>${f.name}</td><td>${f.address||'-'}</td><td>${f.phone||'-'}</td><td><button class="btn btn-delete" onclick="deleteFacility('${f.id}')">削除</button></td></tr>`;
+    const checked = f.show_in_booking !== false ? 'checked' : '';
+    const label   = f.show_in_booking !== false
+      ? '<span style="color:#2e7d32;font-weight:600">✅ 表示中</span>'
+      : '<span style="color:#aaa">✖ 非表示</span>';
+    html += `<tr>
+      <td>${f.name}</td>
+      <td>${f.address||'-'}</td>
+      <td>${f.phone||'-'}</td>
+      <td style="text-align:center">
+        <label style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">
+          <input type="checkbox" ${checked} onchange="toggleFacilityVisibility('${f.id}', this.checked)"
+            style="width:18px;height:18px;cursor:pointer">
+          ${label}
+        </label>
+      </td>
+      <td><button class="btn btn-delete" onclick="deleteFacility('${f.id}')">削除</button></td>
+    </tr>`;
   });
   html += '</tbody></table>';
   el.innerHTML = html;
+}
+
+async function toggleFacilityVisibility(id, visible) {
+  const {error} = await db.from('facilities').update({show_in_booking: visible}).eq('id', id);
+  if (error) { showMsg('fac_msg', 'エラー: '+error.message, 'error'); return; }
+  facilitiesList = facilitiesList.map(f => f.id === id ? {...f, show_in_booking: visible} : f);
+  renderFacilitiesList();
+  showMsg('fac_msg', `${visible ? '表示' : '非表示'}に変更しました`, 'success');
 }
 
 async function addFacility() {

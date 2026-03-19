@@ -350,7 +350,9 @@ async function init() {
   const facPromise = db.from('facilities').select('*').order('created_at');
   const timeout = new Promise(resolve => setTimeout(() => resolve({data:null,error:'timeout'}), 2000));
   const {data,error} = await Promise.race([facPromise, timeout]);
-  facilities = (data && data.length > 0) ? data : DEFAULT_FACILITIES;
+  facilities = (data && data.length > 0)
+    ? data.filter(f => f.show_in_booking !== false)  // show_in_booking=falseの施設を除外
+    : DEFAULT_FACILITIES;
 
   // 予約・ブロック時間読み込み
   const [resRes, blkRes] = await Promise.all([
