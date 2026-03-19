@@ -95,7 +95,68 @@ tr:hover td{background:#f5f8ff}
 .shop-placeholder{text-align:center;padding:40px;color:#888}
 .shop-placeholder .icon{font-size:3rem;margin-bottom:12px}
 /* レスポンシブ */
-@media(max-width:768px){aside{width:180px}th,td{padding:7px 8px;font-size:.78rem}}
+@media(max-width:768px){
+  aside{width:180px}
+  th,td{padding:7px 8px;font-size:.78rem}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .content{padding:16px}
+  .topbar{padding:10px 14px}
+  .topbar-title{font-size:.95rem}
+  .gcal-btn{font-size:.75rem;padding:6px 10px}
+  .gcal-status{font-size:.72rem;padding:5px 8px}
+}
+@media(max-width:520px){
+  /* サイドバーをハンバーガーメニューに変换 */
+  #app{flex-direction:column}
+  aside{
+    width:100%;
+    flex-direction:row;
+    flex-shrink:0;
+    overflow-x:auto;
+    position:sticky;
+    top:0;
+    z-index:100;
+  }
+  .aside-header{padding:10px 14px;white-space:nowrap;flex-shrink:0}
+  .aside-header p{display:none}
+  nav{display:flex;flex-direction:row;overflow-x:auto;flex:1}
+  nav a{
+    white-space:nowrap;
+    padding:10px 14px;
+    flex-shrink:0;
+    font-size:.78rem;
+    border-left:none !important;
+    border-bottom:3px solid transparent;
+  }
+  nav a.active{border-bottom-color:#e85d04 !important;border-left:none !important}
+  nav a .badge{margin-left:4px;font-size:.6rem}
+  .aside-footer{display:none}
+  /* テーブルを横スクロール対応 */
+  .content{padding:12px 8px;overflow-x:hidden}
+  .card{padding:14px 10px}
+  .card-title{font-size:.9rem}
+  .stats-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .stat-num{font-size:1.6rem}
+  .stat-label{font-size:.72rem}
+  /* テーブルは横スクロール */
+  .card > div > table,.card > table{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+  th,td{padding:6px 8px;font-size:.75rem}
+  /* トップバー */
+  .topbar{flex-direction:column;align-items:flex-start;gap:8px;padding:10px 12px}
+  .topbar-right{width:100%;justify-content:flex-end}
+  .topbar-title{font-size:.9rem}
+  /* フォーム */
+  .form-grid{grid-template-columns:1fr}
+  .form-group input,.form-group select,.form-group textarea{font-size:.88rem}
+  .btn{font-size:.78rem;padding:6px 10px}
+  /* カレンダー */
+  #sched_cal .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    font-size:.68rem;
+  }
+}
 </style>
 </head>
 <body>
@@ -132,13 +193,14 @@ tr:hover td{background:#f5f8ff}
       <div class="topbar-title" id="panel_title">ダッシュボード</div>
       <div class="topbar-right">
         <span class="gcal-status" id="gcal_status">Googleカレンダー: 未連携</span>
-        <button class="gcal-btn" onclick="connectGCal()">G カレンダー連携</button>
+        <button class="gcal-btn" id="gcal_btn" onclick="connectGCal()">G カレンダー連携</button>
       </div>
     </div>
     <div class="content">
 
       <!-- ダッシュボード -->
       <div class="panel active" id="panel-dashboard">
+        <div id="dash_msg"></div>
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-num" id="stat_pending">—</div><div class="stat-label">承認待ち</div></div>
           <div class="stat-card"><div class="stat-num" id="stat_approved">—</div><div class="stat-label">承認済み（今月）</div></div>
@@ -325,6 +387,55 @@ let gCalToken = null;
 let facilitiesList = [];
 
 // ============================================================
+// Googleカレンダー トークン管理（localStorage永続化）
+// ============================================================
+function gcalSaveToken(token, expiresIn) {
+  const expAt = Date.now() + (parseInt(expiresIn||3600) - 60) * 1000;
+  localStorage.setItem('gcal_token', token);
+  localStorage.setItem('gcal_token_exp', expAt.toString());
+  gCalToken = token;
+  updateGCalUI(true);
+  gcalScheduleAutoRefresh(); // 保存時に自動リフレッシュをセット
+}
+
+function gcalLoadToken() {
+  const token = localStorage.getItem('gcal_token');
+  const exp   = parseInt(localStorage.getItem('gcal_token_exp') || '0');
+  if (token && Date.now() < exp) {
+    gCalToken = token;
+    updateGCalUI(true);
+    gcalScheduleAutoRefresh(); // 自動リフレッシュをスケジュール
+    return true;
+  }
+  gcalClearToken();
+  return false;
+}
+
+function gcalClearToken() {
+  localStorage.removeItem('gcal_token');
+  localStorage.removeItem('gcal_token_exp');
+  gCalToken = null;
+  updateGCalUI(false);
+}
+
+function updateGCalUI(linked) {
+  const st  = document.getElementById('gcal_status');
+  const btn = document.getElementById('gcal_btn');
+  if (!st) return;
+  if (linked) {
+    const expMs = parseInt(localStorage.getItem('gcal_token_exp')||'0');
+    const remaining = Math.max(0, Math.round((expMs - Date.now()) / 60000));
+    st.textContent  = `Googleカレンダー: 連携済み（残${remaining}分）`;
+    st.className    = 'gcal-status linked';
+    if (btn) btn.textContent = '🔄 再連携';
+  } else {
+    st.textContent = 'Googleカレンダー: 未連携';
+    st.className   = 'gcal-status';
+    if (btn) btn.textContent = 'G カレンダー連携';
+  }
+}
+
+// ============================================================
 // ログイン
 // ============================================================
 async function doLogin() {
@@ -356,6 +467,10 @@ async function initApp() {
   await loadBlocks();
   await loadRecurring();
   populateFacilitySelects();
+  // Realtime監視開始
+  startRealtimeWatch();
+  // トークン残時間を30秒ごとに更新
+  setInterval(() => { if (gCalToken) updateGCalUI(true); }, 30000);
 }
 
 // ============================================================
@@ -653,36 +768,161 @@ async function deleteRecurring(id) {
 // ============================================================
 // Googleカレンダー
 // ============================================================
+// サイレントリフレッシュ用のiframe（バックグラウンド自動再認証）
+function gcalBuildAuthUrl(prompt) {
+  return 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
+    client_id:    GOOGLE_CLIENT_ID,
+    redirect_uri: location.origin + location.pathname,
+    response_type:'token',
+    scope:        'https://www.googleapis.com/auth/calendar.events',
+    prompt:       prompt || 'none',
+    include_granted_scopes: 'true'
+  });
+}
+
+// 手動連携ボタン（初回のみ画面遷移）
 function connectGCal() {
   const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
+    client_id:    GOOGLE_CLIENT_ID,
     redirect_uri: location.origin + location.pathname,
-    response_type: 'token',
-    scope: 'https://www.googleapis.com/auth/calendar.events',
-    prompt: 'consent'
+    response_type:'token',
+    scope:        'https://www.googleapis.com/auth/calendar.events',
+    prompt:       'consent',
+    include_granted_scopes: 'true'
   });
   location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params;
 }
 
-function createGCalEvent(r) {
-  if (!gCalToken) return;
-  const startDT = r.lesson_date + 'T' + r.start_time;
-  const endDT = r.lesson_date + 'T' + r.end_time;
-  const catLabel = r.category === 'junior' ? 'ジュニア' : '社会人';
-  fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-    method: 'POST',
-    headers: {'Authorization':'Bearer '+gCalToken,'Content-Type':'application/json'},
-    body: JSON.stringify({
-      summary: `【TTラボ】${r.applicant_name}様 レッスン（${catLabel}${r.participants}名）`,
-      location: r.facility_name,
-      description: `氏名: ${r.applicant_name}\n電話: ${r.applicant_phone}\nメール: ${r.applicant_email}\n時間: ${r.duration_minutes}分\n料金: ¥${r.price}\n区分: ${catLabel}/${r.participants}名`,
-      start: {dateTime: startDT, timeZone: 'Asia/Tokyo'},
-      end:   {dateTime: endDT,   timeZone: 'Asia/Tokyo'},
-      reminders: {useDefault:false, overrides:[{method:'email',minutes:120},{method:'popup',minutes:120}]}
-    })
-  }).then(res => res.json()).then(ev => {
-    if (ev.id) db.from('lesson_requests').update({google_event_id:ev.id}).eq('id',r.id);
+// サイレントリフレッシュ（iframeでバックグラウンド再認証）
+function gcalSilentRefresh() {
+  return new Promise((resolve) => {
+    // 既存のiframeを削除
+    const old = document.getElementById('gcal_iframe');
+    if (old) old.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'gcal_iframe';
+    iframe.style.display = 'none';
+    iframe.src = gcalBuildAuthUrl('none'); // prompt:none = 画面表示なし
+
+    // iframeのリダイレクト先URLをポーリングで監視
+    document.body.appendChild(iframe);
+
+    let tries = 0;
+    const poll = setInterval(() => {
+      tries++;
+      try {
+        const h = new URLSearchParams(iframe.contentWindow.location.hash.slice(1));
+        const t = h.get('access_token');
+        const e = h.get('expires_in');
+        if (t) {
+          clearInterval(poll);
+          iframe.remove();
+          gcalSaveToken(t, e);
+          console.log('Gcalサイレントリフレッシュ成功');
+          resolve(true);
+          return;
+        }
+      } catch(e) { /* クロスオリジン中はエラーになる（正常） */ }
+      if (tries > 30) { // 15秒タイムアウト
+        clearInterval(poll);
+        iframe.remove();
+        console.warn('サイレントリフレッシュ失敗（要手動再連携）');
+        gcalClearToken();
+        resolve(false);
+      }
+    }, 500);
   });
+}
+
+// 期限の10分前に自動リフレッシュするタイマーをセット
+function gcalScheduleAutoRefresh() {
+  const exp = parseInt(localStorage.getItem('gcal_token_exp') || '0');
+  const msLeft = exp - Date.now() - 10 * 60 * 1000; // 10分前
+  if (msLeft <= 0) {
+    gcalSilentRefresh();
+    return;
+  }
+  console.log(`Gcal自動リフレッシュを${Math.round(msLeft/60000)}分後にセット`);
+  setTimeout(async () => {
+    const ok = await gcalSilentRefresh();
+    if (ok) gcalScheduleAutoRefresh(); // 成功したら次のタイマーをセット
+  }, msLeft);
+}
+
+async function createGCalEvent(r) {
+  if (!gCalToken) { console.warn('Gcal未連携のためスキップ'); return null; }
+  const startDT = r.lesson_date + 'T' + r.start_time.slice(0,8);
+  const endDT   = r.lesson_date + 'T' + r.end_time.slice(0,8);
+  const catLabel = r.category === 'junior' ? 'ジュニア' : '社会人';
+  const body = {
+    summary:  `【TTラボ】${r.applicant_name}様 レッスン（${catLabel}${r.participants}名）`,
+    location: r.facility_name || '',
+    description: [
+      `氏名: ${r.applicant_name}`,
+      `電話: ${r.applicant_phone}`,
+      `メール: ${r.applicant_email}`,
+      `時間: ${r.duration_minutes}分`,
+      `料金: ¥${(r.price||0).toLocaleString()}`,
+      `区分: ${catLabel} / ${r.participants}名`,
+      `メニュー: ${r.menu||'未選択'}`,
+      r.notes ? `備考: ${r.notes}` : ''
+    ].filter(Boolean).join('\n'),
+    start: {dateTime: startDT, timeZone: 'Asia/Tokyo'},
+    end:   {dateTime: endDT,   timeZone: 'Asia/Tokyo'},
+    reminders: {useDefault:false, overrides:[
+      {method:'email',  minutes:120},
+      {method:'popup',  minutes:120}
+    ]}
+  };
+  try {
+    const res  = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {'Authorization':'Bearer '+gCalToken, 'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const ev = await res.json();
+    if (ev.id) {
+      await db.from('lesson_requests').update({google_event_id: ev.id}).eq('id', r.id);
+      console.log('Gcalイベント作成:', ev.id);
+      return ev.id;
+    } else if (ev.error?.code === 401) {
+      // トークン期限切れ → クリアして再連携を促す
+      gcalClearToken();
+      showMsg('res_msg','Googleカレンダーのトークンが切れました。再連携してください。','error');
+    }
+  } catch(e) {
+    console.error('Gcalエラー:', e);
+  }
+  return null;
+}
+
+// ============================================================
+// Supabase Realtime: 新規予約を自動検知してカレンダーに追加
+// ============================================================
+function startRealtimeWatch() {
+  db.channel('new_reservations')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'lesson_requests'
+    }, async (payload) => {
+      const r = payload.new;
+      console.log('新規予約検知:', r.applicant_name);
+      // 通知バッジを更新
+      await loadStats();
+      // Gcal連携済みなら自動でカレンダーに追加（pending状態でも追加）
+      if (gCalToken && !r.google_event_id) {
+        await createGCalEvent(r);
+      }
+      // ダッシュボードに通知表示
+      showMsg('dash_msg',
+        `📨 新規予約: ${r.applicant_name}様（${r.facility_name} / ${r.lesson_date}）`,
+        'success'
+      );
+      await loadReservations();
+    })
+    .subscribe();
 }
 
 // ============================================================
@@ -715,10 +955,11 @@ function showMsg(id, msg, type) {
 // OAuthコールバック処理
 const hash = new URLSearchParams(location.hash.slice(1));
 if (hash.get('access_token')) {
-  gCalToken = hash.get('access_token');
-  history.replaceState(null,'',location.pathname);
-  document.getElementById('gcal_status').textContent = 'Googleカレンダー: 連携済み';
-  document.getElementById('gcal_status').className = 'gcal-status linked';
+  gcalSaveToken(hash.get('access_token'), hash.get('expires_in'));
+  history.replaceState(null, '', location.pathname);
+} else {
+  // localStorageから復元を試みる
+  gcalLoadToken();
 }
 
 // セッション確認
