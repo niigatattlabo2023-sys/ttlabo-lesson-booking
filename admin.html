@@ -379,7 +379,8 @@ const SUPABASE_URL = 'https://lwbysesbbehholrojonc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3YnlzZXNiYmVoaG9scm9qb25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0MjcxNjMsImV4cCI6MjA4ODAwMzE2M30.2NwutCuF7mODQ3bZUlDumn-wx2zHLWR_gP1tjHQuNqg';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const GOOGLE_CLIENT_ID = '279588794018-s0o2gh9rk2mkl8lhjldon7bn5o41pl6h.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID  = '279588794018-s0o2gh9rk2mkl8lhjldon7bn5o41pl6h.apps.googleusercontent.com';
+const GOOGLE_MAPS_KEY   = 'AIzaSyC0zJZzsFmJtXSZJqHXbq_P0NvMxA0bFMk';
 // 大会案内ツールURL（あとで差し替え可能）
 const TOURNAMENT_URL = 'https://www.genspark.ai/agents?id=tournament-tool';
 
@@ -653,20 +654,106 @@ function copyLine() {
 // ============================================================
 // ブロック時間
 // ============================================================
+// ============================================================
+// Google Maps: 移動時間取得
+// ============================================================
+async function getTravelMinutes(originName, destName) {
+  if (!originName || !destName || originName === destName) return 0;
+  if (!GOOGLE_MAPS_KEY) return 0;
+  try {
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(originName)}&destinations=${encodeURIComponent(destName)}&mode=driving&language=ja&key=${GOOGLE_MAPS_KEY}`;
+    // CORSのためproxyが必要 → allOriginsを使う
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const res  = await fetch(proxy);
+    const json = await res.json();
+    const data = JSON.parse(json.contents);
+    const duration = data?.rows?.[0]?.elements?.[0]?.duration?.value;
+    return duration ? Math.ceil(duration / 60) : 0;
+  } catch(e) {
+    console.warn('移動時間取得失敗:', e);
+    return 0;
+  }
+}
+
+// ============================================================
+// スケジュール被り・移動時間チェック
+// ============================================================
+async function checkConflict(date, startHHMM, endHHMM, facId) {
+  // 同日の承認済み予約・ブロックを取得
+  const [resData, blkData] = await Promise.all([
+    db.from('lesson_requests').select('start_time,end_time,facility_id,facility_name').eq('lesson_date', date).eq('status','approved'),
+    db.from('blocked_times').select('start_time,end_time,facility_id,facility_name').eq('block_date', date)
+  ]);
+  const events = [...(resData.data||[]), ...(blkData.data||[])];
+  const newStart = timeToMin(startHHMM);
+  const newEnd   = timeToMin(endHHMM);
+  const myFac    = facilitiesList.find(f => f.id === facId);
+
+  for (const ev of events) {
+    const evStart = timeToMin(ev.start_time?.slice(0,5));
+    const evEnd   = timeToMin(ev.end_time?.slice(0,5));
+    // 時間重複チェック
+    if (newStart < evEnd && newEnd > evStart) {
+      if (!facId || !ev.facility_id || facId === ev.facility_id) {
+        return { conflict: true, msg: `⚠️ ${ev.facility_name||'同施設'} ${ev.start_time?.slice(0,5)}〜${ev.end_time?.slice(0,5)} と時間が被っています` };
+      }
+    }
+    // 移動時間チェック（別施設の場合）
+    if (myFac && ev.facility_id && facId !== ev.facility_id) {
+      const otherFac = facilitiesList.find(f => f.id === ev.facility_id);
+      if (otherFac) {
+        const travel = await getTravelMinutes(myFac.name + '新潟', otherFac.name + '新潟');
+        if (travel > 0) {
+          const gap1 = evStart - newEnd;  // 自分の後に相手
+          const gap2 = newStart - evEnd;  // 相手の後に自分
+          if ((gap1 >= 0 && gap1 < travel) || (gap2 >= 0 && gap2 < travel)) {
+            return { conflict: false, warning: true, msg: `🚗 ${otherFac.name}との移動時間は約${travel}分。余裕が${Math.max(gap1,gap2)}分しかありません` };
+          }
+        }
+      }
+    }
+  }
+  return { conflict: false };
+}
+
+function timeToMin(hhmm) {
+  if (!hhmm) return 0;
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
+// ============================================================
+// ブロック追加（カレンダー反映付き）
+// ============================================================
 async function addBlock() {
-  const date = document.getElementById('s_date').value;
+  const date  = document.getElementById('s_date').value;
   const start = document.getElementById('s_start').value;
-  const end = document.getElementById('s_end').value;
+  const end   = document.getElementById('s_end').value;
   if (!date || !start || !end) { showMsg('sched_msg','日付・時間を入力してください','error'); return; }
-  const facId = document.getElementById('s_facility').value;
+  const facId   = document.getElementById('s_facility').value;
   const facName = facId ? (facilitiesList.find(f=>f.id===facId)?.name||'') : '全施設共通';
-  const {error} = await db.from('blocked_times').insert([{
+  const memo    = document.getElementById('s_memo').value;
+
+  // 被り・移動時間チェック
+  const check = await checkConflict(date, start, end, facId);
+  if (check.conflict) { showMsg('sched_msg', check.msg, 'error'); return; }
+  if (check.warning)  { showMsg('sched_msg', check.msg, 'error'); /* 警告は表示するが続行 */ }
+
+  const {error, data} = await db.from('blocked_times').insert([{
     block_date: date, start_time: start+':00', end_time: end+':00',
-    facility_id: facId||null, facility_name: facName,
-    memo: document.getElementById('s_memo').value
-  }]);
+    facility_id: facId||null, facility_name: facName, memo
+  }]).select().single();
   if (error) { showMsg('sched_msg','エラー: '+error.message,'error'); return; }
-  showMsg('sched_msg','追加しました','success');
+
+  // Googleカレンダーに追加
+  if (gCalToken) {
+    await createGCalEventBlock({
+      title:    memo || `ブロック（${facName}）`,
+      date, start_time: start+':00', end_time: end+':00',
+      location: facName, description: memo || ''
+    });
+  }
+  showMsg('sched_msg', check.warning ? check.msg + '\n追加しました' : '追加しました（カレンダーにも反映）', 'success');
   document.getElementById('s_date').value=''; document.getElementById('s_start').value='';
   document.getElementById('s_end').value=''; document.getElementById('s_memo').value='';
   await loadBlocks();
@@ -736,7 +823,28 @@ async function addRecurring() {
   }
   const {error} = await db.from('recurring_blocks').insert([insertData]);
   if (error) { showMsg('rec_msg','エラー: '+error.message,'error'); return; }
-  showMsg('rec_msg','定期ブロックを追加しました','success');
+
+  // Googleカレンダーに定期イベントを登録
+  if (gCalToken) {
+    const dow = ['日','月','火','水','木','金','土'];
+    const typeLabel = type === 'weekly'
+      ? `毎週${dow[insertData.recurrence_day]}曜日`
+      : `毎月第${insertData.week_of_month}${dow[insertData.recurrence_day]}曜日`;
+    // 開始日の当該曜日を求めて最初のイベントを登録
+    const firstDate = getFirstOccurrence(sdate, type, insertData.recurrence_day, insertData.week_of_month);
+    if (firstDate) {
+      await createGCalEventBlock({
+        title:    `【定期】${title}（${typeLabel}）`,
+        date:     firstDate,
+        start_time: start+':00',
+        end_time:   end+':00',
+        location:   facName,
+        description: `定期: ${typeLabel}\n施設: ${facName}\n期間: ${sdate}〜${document.getElementById('r_edate').value||'無期限'}`
+      });
+    }
+  }
+
+  showMsg('rec_msg','定期ブロックを追加しました（カレンダーにも反映）','success');
   document.getElementById('r_title').value=''; document.getElementById('r_start').value='';
   document.getElementById('r_end').value=''; document.getElementById('r_sdate').value='';
   document.getElementById('r_edate').value=''; document.getElementById('r_memo').value='';
@@ -923,6 +1031,73 @@ function startRealtimeWatch() {
       await loadReservations();
     })
     .subscribe();
+}
+
+// ブロック・定期イベントをGoogleカレンダーに追加
+async function createGCalEventBlock({title, date, start_time, end_time, location, description}) {
+  if (!gCalToken) return;
+  const startDT = date + 'T' + start_time.slice(0,8);
+  const endDT   = date + 'T' + end_time.slice(0,8);
+  try {
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {'Authorization':'Bearer '+gCalToken, 'Content-Type':'application/json'},
+      body: JSON.stringify({
+        summary:     title,
+        location:    location || '',
+        description: description || '',
+        start: {dateTime: startDT, timeZone: 'Asia/Tokyo'},
+        end:   {dateTime: endDT,   timeZone: 'Asia/Tokyo'},
+        reminders: {useDefault:false, overrides:[
+          {method:'popup', minutes:120}
+        ]}
+      })
+    });
+    const ev = await res.json();
+    if (ev.error?.code === 401) {
+      gcalClearToken();
+      showMsg('sched_msg','Googleカレンダーのトークンが切れました。再連携してください。','error');
+    }
+    return ev.id || null;
+  } catch(e) {
+    console.error('GCalブロック登録エラー:', e);
+    return null;
+  }
+}
+
+// 定期ブロックの最初の発生日を計算
+function getFirstOccurrence(startDate, type, day, weekOfMonth) {
+  const base = new Date(startDate);
+  if (type === 'weekly') {
+    // 毎週: startDate以降で最初のday曜日
+    const diff = (day - base.getDay() + 7) % 7;
+    base.setDate(base.getDate() + diff);
+  } else {
+    // 毎月: startDateの属する月の第weekOfMonth回目のday曜日
+    base.setDate(1);
+    let count = 0;
+    while (true) {
+      if (base.getDay() === day) {
+        count++;
+        if (count === weekOfMonth) break;
+      }
+      base.setDate(base.getDate() + 1);
+      if (base.getMonth() !== new Date(startDate).getMonth()) {
+        // 習月に移動して再計算
+        base.setMonth(base.getMonth() + 1);
+        base.setDate(1);
+        count = 0;
+      }
+    }
+    // startDateより前なら習月にシフト
+    if (base < new Date(startDate)) {
+      base.setMonth(base.getMonth() + 1);
+      return getFirstOccurrence(
+        base.toISOString().slice(0,10), type, day, weekOfMonth
+      );
+    }
+  }
+  return base.toISOString().slice(0,10);
 }
 
 // ============================================================
