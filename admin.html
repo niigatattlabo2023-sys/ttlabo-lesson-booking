@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TTラボ管理画面</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="window.onGISLoad && window.onGISLoad()"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f0f4f8;color:#333;min-height:100vh}
@@ -388,15 +389,19 @@ let gCalToken = null;
 let facilitiesList = [];
 
 // ============================================================
-// Googleカレンダー トークン管理（localStorage永続化）
+// Googleカレンダー トークン管理（GIS方式・自動更新対応）
 // ============================================================
+let gisTokenClient = null; // GISクライアント（初期化後にセット）
+
 function gcalSaveToken(token, expiresIn) {
-  const expAt = Date.now() + (parseInt(expiresIn||3600) - 60) * 1000;
-  localStorage.setItem('gcal_token', token);
+  const expAt = Date.now() + (parseInt(expiresIn||3599) - 60) * 1000;
+  localStorage.setItem('gcal_token',     token);
   localStorage.setItem('gcal_token_exp', expAt.toString());
   gCalToken = token;
   updateGCalUI(true);
-  gcalScheduleAutoRefresh(); // 保存時に自動リフレッシュをセット
+  // 期限55分後に自動でサイレント再取得
+  const msLeft = expAt - Date.now();
+  setTimeout(() => gcalSilentRefresh(), Math.max(msLeft, 0));
 }
 
 function gcalLoadToken() {
@@ -405,7 +410,9 @@ function gcalLoadToken() {
   if (token && Date.now() < exp) {
     gCalToken = token;
     updateGCalUI(true);
-    gcalScheduleAutoRefresh(); // 自動リフレッシュをスケジュール
+    // 残り時間後に自動再取得
+    const msLeft = exp - Date.now();
+    setTimeout(() => gcalSilentRefresh(), Math.max(msLeft, 0));
     return true;
   }
   gcalClearToken();
@@ -417,6 +424,37 @@ function gcalClearToken() {
   localStorage.removeItem('gcal_token_exp');
   gCalToken = null;
   updateGCalUI(false);
+}
+
+// GISクライアントを初期化（google.accounts.oauth2が読み込まれてから呼ぶ）
+function initGIS() {
+  if (!window.google?.accounts?.oauth2) return;
+  gisTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    callback: (resp) => {
+      if (resp.error) {
+        console.warn('GISエラー:', resp.error);
+        gcalClearToken();
+        return;
+      }
+      gcalSaveToken(resp.access_token, resp.expires_in);
+    },
+    // ポップアップ方式：画面遷移なし
+  });
+  // 起動時にlocalStorageから復元 or サイレント再取得
+  if (!gcalLoadToken()) {
+    // 一度でも連携済みなら自動でサイレント取得
+    const hadToken = localStorage.getItem('gcal_had_token');
+    if (hadToken) gcalSilentRefresh();
+  }
+}
+
+// サイレントリフレッシュ（ポップアップなしで自動再取得）
+function gcalSilentRefresh() {
+  if (!gisTokenClient) return;
+  // prompt:'' = 画面表示なし（既にログイン済みなら自動取得）
+  gisTokenClient.requestAccessToken({ prompt: '' });
 }
 
 function updateGCalUI(linked) {
@@ -898,88 +936,17 @@ async function deleteRecurring(id) {
 }
 
 // ============================================================
-// Googleカレンダー
+// Googleカレンダー 手動連携ボタン（GIS方式・ポップアップ）
 // ============================================================
-// サイレントリフレッシュ用のiframe（バックグラウンド自動再認証）
-function gcalBuildAuthUrl(prompt) {
-  return 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
-    client_id:    GOOGLE_CLIENT_ID,
-    redirect_uri: location.origin + location.pathname,
-    response_type:'token',
-    scope:        'https://www.googleapis.com/auth/calendar.events',
-    prompt:       prompt || 'none',
-    include_granted_scopes: 'true'
-  });
-}
-
-// 手動連携ボタン（初回のみ画面遷移）
 function connectGCal() {
-  const params = new URLSearchParams({
-    client_id:    GOOGLE_CLIENT_ID,
-    redirect_uri: location.origin + location.pathname,
-    response_type:'token',
-    scope:        'https://www.googleapis.com/auth/calendar.events',
-    prompt:       'consent',
-    include_granted_scopes: 'true'
-  });
-  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params;
-}
-
-// サイレントリフレッシュ（iframeでバックグラウンド再認証）
-function gcalSilentRefresh() {
-  return new Promise((resolve) => {
-    // 既存のiframeを削除
-    const old = document.getElementById('gcal_iframe');
-    if (old) old.remove();
-
-    const iframe = document.createElement('iframe');
-    iframe.id = 'gcal_iframe';
-    iframe.style.display = 'none';
-    iframe.src = gcalBuildAuthUrl('none'); // prompt:none = 画面表示なし
-
-    // iframeのリダイレクト先URLをポーリングで監視
-    document.body.appendChild(iframe);
-
-    let tries = 0;
-    const poll = setInterval(() => {
-      tries++;
-      try {
-        const h = new URLSearchParams(iframe.contentWindow.location.hash.slice(1));
-        const t = h.get('access_token');
-        const e = h.get('expires_in');
-        if (t) {
-          clearInterval(poll);
-          iframe.remove();
-          gcalSaveToken(t, e);
-          console.log('Gcalサイレントリフレッシュ成功');
-          resolve(true);
-          return;
-        }
-      } catch(e) { /* クロスオリジン中はエラーになる（正常） */ }
-      if (tries > 30) { // 15秒タイムアウト
-        clearInterval(poll);
-        iframe.remove();
-        console.warn('サイレントリフレッシュ失敗（要手動再連携）');
-        gcalClearToken();
-        resolve(false);
-      }
-    }, 500);
-  });
-}
-
-// 期限の10分前に自動リフレッシュするタイマーをセット
-function gcalScheduleAutoRefresh() {
-  const exp = parseInt(localStorage.getItem('gcal_token_exp') || '0');
-  const msLeft = exp - Date.now() - 10 * 60 * 1000; // 10分前
-  if (msLeft <= 0) {
-    gcalSilentRefresh();
+  if (!gisTokenClient) {
+    alert('GISライブラリ読み込み中です。少し待ってから再度押してください。');
     return;
   }
-  console.log(`Gcal自動リフレッシュを${Math.round(msLeft/60000)}分後にセット`);
-  setTimeout(async () => {
-    const ok = await gcalSilentRefresh();
-    if (ok) gcalScheduleAutoRefresh(); // 成功したら次のタイマーをセット
-  }, msLeft);
+  // 初回は必ずGoogleアカウント選択画面を表示
+  gisTokenClient.requestAccessToken({ prompt: 'consent' });
+  // 一度でも連携したフラグを保存（次回から自動再取得に使う）
+  localStorage.setItem('gcal_had_token', '1');
 }
 
 async function createGCalEvent(r) {
@@ -1151,15 +1118,9 @@ function showMsg(id, msg, type) {
   setTimeout(() => el.innerHTML='', 4000);
 }
 
-// OAuthコールバック処理
-const hash = new URLSearchParams(location.hash.slice(1));
-if (hash.get('access_token')) {
-  gcalSaveToken(hash.get('access_token'), hash.get('expires_in'));
-  history.replaceState(null, '', location.pathname);
-} else {
-  // localStorageから復元を試みる
-  gcalLoadToken();
-}
+// GISライブラリ読み込み完了後に初期化
+// （google.accounts が使えるようになってから initGIS を呼ぶ）
+window.onGISLoad = initGIS;
 
 // セッション確認
 db.auth.getSession().then(({data:{session}}) => {

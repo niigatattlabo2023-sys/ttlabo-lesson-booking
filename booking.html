@@ -208,9 +208,22 @@ footer{background:#1a3a5c;color:#fff;text-align:center;padding:16px;font-size:.8
           </select>
         </div>
         <div class="form-group"><label>備考・ご要望</label><textarea id="A_notes" rows="3" placeholder="レベル・特に練習したい内容などをご記入ください"></textarea></div>
+
+        <div class="form-group">
+          <label class="required">🏢 施設予約</label>
+          <select id="A_facility_booking" onchange="calcPrice('A')">
+            <option value="self">自分で予約する</option>
+            <option value="kobayashi">小林に依頼する（+¥200）</option>
+          </select>
+          <p style="margin-top:6px;font-size:.78rem;color:#e85d04;background:#fff3e8;border-radius:6px;padding:8px 10px">
+            ⚠️ 小林に依頼の場合は施設予約代行手数料として <strong>¥200</strong> を張いただきます。
+          </p>
+        </div>
+
         <div class="price-box" id="A_price_box">
           <div class="price-row"><span>レッスン料</span><span id="A_price_val">—</span></div>
           <div class="price-row"><span>施設利用料</span><span>別途実費</span></div>
+          <div class="price-row" id="A_booking_fee_row" style="display:none"><span>施設予約代行手数料</span><span>¥200</span></div>
           <div class="price-total"><span>合計目安</span><span id="A_total_val">—</span></div>
         </div>
         <button type="submit" class="submit-btn" id="A_submit">📨 予約を申請する</button>
@@ -290,9 +303,22 @@ footer{background:#1a3a5c;color:#fff;text-align:center;padding:16px;font-size:.8
           </select>
         </div>
         <div class="form-group"><label>備考・ご要望</label><textarea id="B_notes" rows="3" placeholder="レベル・特に練習したい内容などをご記入ください"></textarea></div>
+
+        <div class="form-group">
+          <label class="required">🏢 施設予約</label>
+          <select id="B_facility_booking" onchange="calcPrice('B')">
+            <option value="self">自分で予約する</option>
+            <option value="kobayashi">小林に依頼する（+¥200）</option>
+          </select>
+          <p style="margin-top:6px;font-size:.78rem;color:#e85d04;background:#fff3e8;border-radius:6px;padding:8px 10px">
+            ⚠️ 小林に依頼の場合は施設予約代行手数料として <strong>¥200</strong> を張いただきます。
+          </p>
+        </div>
+
         <div class="price-box" id="B_price_box">
           <div class="price-row"><span>レッスン料</span><span id="B_price_val">—</span></div>
           <div class="price-row"><span>施設利用料</span><span>別途実費</span></div>
+          <div class="price-row" id="B_booking_fee_row" style="display:none"><span>施設予約代行手数料</span><span>¥200</span></div>
           <div class="price-total"><span>合計目安</span><span id="B_total_val">—</span></div>
         </div>
         <button type="submit" class="submit-btn" id="B_submit">📨 予約を申請する</button>
@@ -545,10 +571,16 @@ function calcPrice(p) {
   const cat = document.getElementById(p+'_category')?.value || 'adult';
   const num = parseInt(document.getElementById(p+'_participants')?.value) || 1;
   const dur = parseInt(document.getElementById(p+'_duration')?.value) || 90;
-  const price = (PRICE_TABLE[cat]?.[num]?.[dur]) || 0;
-  if (price > 0) {
-    document.getElementById(p+'_price_val').textContent = '¥'+price.toLocaleString();
-    document.getElementById(p+'_total_val').textContent = '¥'+price.toLocaleString()+'〜';
+  const booking = document.getElementById(p+'_facility_booking')?.value || 'self';
+  const lessonPrice = (PRICE_TABLE[cat]?.[num]?.[dur]) || 0;
+  const bookingFee  = booking === 'kobayashi' ? 200 : 0;
+  const total = lessonPrice + bookingFee;
+  // 施設予約代行手数料行の表示切り替え
+  const feeRow = document.getElementById(p+'_booking_fee_row');
+  if (feeRow) feeRow.style.display = bookingFee > 0 ? '' : 'none';
+  if (lessonPrice > 0) {
+    document.getElementById(p+'_price_val').textContent = '¥'+lessonPrice.toLocaleString();
+    document.getElementById(p+'_total_val').textContent = '¥'+total.toLocaleString()+'〜';
   }
 }
 
@@ -567,7 +599,10 @@ async function submitForm(e, p) {
   const cat = document.getElementById(p+'_category').value;
   const num = parseInt(document.getElementById(p+'_participants').value);
   const dur = parseInt(document.getElementById(p+'_duration').value);
-  const price = (PRICE_TABLE[cat]?.[num]?.[dur]) || 0;
+  const facilityBooking = document.getElementById(p+'_facility_booking')?.value || 'self';
+  const lessonPrice = (PRICE_TABLE[cat]?.[num]?.[dur]) || 0;
+  const bookingFee  = facilityBooking === 'kobayashi' ? 200 : 0;
+  const price = lessonPrice + bookingFee;
   const sh = start.h, sm = start.m;
   const em2 = sh*60+sm+dur;
   const endTime = String(Math.floor(em2/60)).padStart(2,'0')+':'+String(em2%60).padStart(2,'0')+':00';
@@ -589,6 +624,7 @@ async function submitForm(e, p) {
     menu: document.getElementById(p+'_menu').value,
     notes: document.getElementById(p+'_notes').value,
     price: price,
+    facility_booking: facilityBooking,
     status: 'pending'
   };
   const {error} = await db.from('lesson_requests').insert([payload]);
