@@ -612,7 +612,7 @@ async function submitForm(e, p) {
   btn.disabled = true;
   btn.textContent = '送信中...';
   const payload = {
-    facility_id: fac.id?.startsWith('fac-default-') ? null : fac.id,
+    facility_id: fac.id || null,
     facility_name: fac.name,
     lesson_date: date,
     start_time: startTime,
