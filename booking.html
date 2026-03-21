@@ -351,12 +351,7 @@ const PRICE_TABLE = {
   }
 };
 
-const DEFAULT_FACILITIES = [
-  {id:'fac-default-1',name:'燕市体育センター',address:'新潟県燕市吉田西太田1000'},
-  {id:'fac-default-2',name:'三条市体育文化センター',address:'新潟県三条市田島2丁目13-1'},
-  {id:'fac-default-3',name:'加茂市体育施設',address:'新潟県加茂市桜ヶ丘3丁目3-1'},
-  {id:'fac-default-4',name:'燕三条地場産業振興センター体育館',address:'新潟県三条市須頃1丁目17'}
-];
+const DEFAULT_FACILITIES = []; // Supabaseから読み込む（フォールバックなし）
 
 let facilities = [];
 let reservations = [];
@@ -376,9 +371,16 @@ async function init() {
   const facPromise = db.from('facilities').select('*').order('created_at');
   const timeout = new Promise(resolve => setTimeout(() => resolve({data:null,error:'timeout'}), 2000));
   const {data,error} = await Promise.race([facPromise, timeout]);
-  facilities = (data && data.length > 0)
-    ? data.filter(f => f.show_in_booking !== false)  // show_in_booking=falseの施設を除外
-    : DEFAULT_FACILITIES;
+  if (data && data.length > 0) {
+    facilities = data.filter(f => f.show_in_booking !== false);
+  } else {
+    // Supabase接続失敗またはデータなし → エラー表示
+    facilities = [];
+    document.getElementById('A_fac_list').innerHTML =
+      '<div class="msg error">施設情報の読み込みに失敗しました。ページを再読み込みしてください。</div>';
+    document.getElementById('B_fac_list').innerHTML =
+      '<div class="msg error">施設情報の読み込みに失敗しました。ページを再読み込みしてください。</div>';
+  }
 
   // 予約・ブロック時間読み込み
   const [resRes, blkRes] = await Promise.all([
