@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新潟卓球ラボ - 大会管理システム</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+    /* ===================================
+       新潟卓球ラボ 大会管理システム
+       カラーテーマ: 卓球（オレンジ×ブルー）
+       =================================== */
+
+    :root {
+        --primary-color: #FF6B35;
+        --primary-dark: #E85A2A;
+        --primary-light: #FF8C61;
+        --secondary-color: #004E89;
+        --secondary-light: #1976D2;
+        --accent-color: #FFB627;
+        --success-color: #4CAF50;
+        --danger-color: #F44336;
+        --warning-color: #FF9800;
+        --info-color: #2196F3;
+        --bg-primary: #F5F7FA;
+        --bg-secondary: #FFFFFF;
+        --bg-dark: #1A1A2E;
+        --text-primary: #2C3E50;
+        --text-secondary: #7F8C8D;
+        --border-color: #E0E6ED;
+        --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .app-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .app-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        box-shadow: var(--shadow-lg);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .logo i {
+        font-size: 2.5rem;
+        animation: spin 3s linear infinite;
+    }
+
+    @keyframes spin {
+        0%, 50%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-10deg); }
+        75% { transform: rotate(10deg); }
+    }
+
+    .logo h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .logo .subtitle {
+        font-size: 0.75rem;
+        font-weight: 400;
+        opacity: 0.9;
+        margin-top: -0.25rem;
+    }
+
+    .header-nav {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .nav-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid transparent;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .nav-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .nav-btn.active {
+        background: white;
+        color: var(--primary-color);
+        border-color: white;
+    }
+
+    .nav-btn i {
+        font-size: 1.1rem;
+    }
+
+    .main-content {
+        flex: 1;
+        max-width: 1400px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .page {
+        display: none;
+    }
+
+    .page.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-header h2 {
+        font-size: 2rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .page-header h2 i {
+        color: var(--primary-color);
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 2px solid var(--border-color);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+        background: var(--bg-primary);
+        border-color: var(--primary-color);
+    }
+
+    .btn-success {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+        background: #45a049;
+        transform: translateY(-2px);
+    }
+
+    .btn-danger {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+        background: #da190b;
+    }
+
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .filter-bar {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .filter-group label {
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .filter-group select {
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+    .search-box {
+        flex: 1;
+        position: relative;
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+
+    .tournaments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .tournament-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .tournament-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .tournament-card-header {
+        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-light) 100%);
+        color: white;
+        padding: 1.5rem;
+        position: relative;
+    }
+
+    .tournament-status {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .tournament-card-header h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .tournament-date {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tournament-card-body {
+        padding: 1.5rem;
+    }
+
+    .tournament-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .info-item i {
+        width: 20px;
+        color: var(--primary-color);
+    }
+
+    .tournament-categories {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .category-tag {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+
+    .tournament-card-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .tournament-card-footer .btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .wizard-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 2rem;
+    }
+
+    .wizard-steps {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 3rem;
+        padding: 0 2rem;
+    }
+
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1;
+        position: relative;
+    }
+
+    .step-number {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        font-weight: 700;
+        border: 3px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    .step.active .step-number {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+        transform: scale(1.1);
+    }
+
+    .step.completed .step-number {
+        background: var(--success-color);
+        color: white;
+        border-color: var(--success-color);
+    }
+
+    .step-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-align: center;
+    }
+
+    .step.active .step-label {
+        color: var(--primary-color);
+    }
+
+    .step-line {
+        height: 3px;
+        background: var(--border-color);
+        flex: 1;
+        margin: 0 1rem;
+        margin-top: -25px;
+    }
+
+    .step.active ~ .step-line,
+    .step.completed ~ .step-line {
+        background: var(--success-color);
+    }
+
+    .wizard-content {
+        animation: fadeIn 0.3s ease;
+    }
+
+    .step-content {
+        padding: 2rem;
+    }
+
+    .step-content h3 {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .step-content h3 i {
+        color: var(--primary-color);
+    }
+
+    .step-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 2px solid var(--border-color);
+    }
+
+    .upload-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .upload-box {
+        border: 3px dashed var(--border-color);
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .upload-box:hover {
+        border-color: var(--primary-color);
+        background: var(--bg-primary);
+    }
+
+    .upload-box.active {
+        border-color: var(--success-color);
+        border-style: solid;
+        background: rgba(76, 175, 80, 0.05);
+    }
+
+    .upload-label {
+        display: block;
+        cursor: pointer;
+    }
+
+    .upload-label i {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .upload-label h4 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .upload-label p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .file-name {
+        display: block;
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background: var(--bg-primary);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .file-name.active {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .ai-analysis {
+        background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(0, 78, 137, 0.1) 100%);
+        border-radius: 12px;
+        padding: 2rem;
+        margin: 2rem 0;
+        text-align: center;
+    }
+
+    .analysis-loading i {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .analysis-loading p {
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-group label i {
+        color: var(--primary-color);
+    }
+
+    .required {
+        color: var(--danger-color);
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    }
+
+    .form-group input[readonly] {
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+    }
+
+    .form-group small {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    #categories-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .category-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .category-item input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
+    .category-item .btn {
+        padding: 0.75rem 1rem;
+    }
+
+    .form-preview {
+        background: var(--bg-primary);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .preview-header,
+    .preview-description,
+    .preview-fields {
+        margin-bottom: 2rem;
+    }
+
+    .preview-header h4,
+    .preview-description h4,
+    .preview-fields h4 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .preview-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+    }
+
+    .preview-content {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        white-space: pre-wrap;
+        line-height: 1.8;
+    }
+
+    #form-fields-preview {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+
+    .field-preview {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .field-preview:last-child {
+        border-bottom: none;
+    }
+
+    .field-preview label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .field-preview .required {
+        color: var(--danger-color);
+    }
+
+    .copy-section {
+        margin: 2rem 0;
+        text-align: center;
+    }
+
+    .copy-section small {
+        display: block;
+        margin-top: 1rem;
+        color: var(--text-secondary);
+    }
+
+    .line-announcement {
+        background: #06C755;
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .line-announcement h4 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+    }
+
+    .announcement-preview {
+        background: white;
+        color: var(--text-primary);
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        white-space: pre-wrap;
+        line-height: 1.8;
+        font-family: 'Hiragino Sans', sans-serif;
+    }
+
+    .integration-section {
+        background: var(--bg-primary);
+        border-radius: 12px;
+        padding: 2rem;
+    }
+
+    .integration-section h4 {
+        font-size: 1.25rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .completion-message {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.2) 100%);
+        border: 2px solid var(--success-color);
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        margin: 2rem 0;
+    }
+
+    .completion-message i {
+        font-size: 4rem;
+        color: var(--success-color);
+        margin-bottom: 1rem;
+    }
+
+    .completion-message h4 {
+        font-size: 1.5rem;
+        color: var(--success-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .completion-message p {
+        color: var(--text-secondary);
+    }
+
+    .settings-container {
+        max-width: 800px;
+    }
+
+    .settings-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    .settings-section h3 {
+        font-size: 1.25rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .settings-section h3 i {
+        color: var(--primary-color);
+    }
+
+    .settings-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-large {
+        max-width: 900px;
+    }
+
+    .modal-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 2px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        font-size: 1.5rem;
+        color: var(--text-primary);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .modal-close:hover {
+        color: var(--danger-color);
+        transform: rotate(90deg);
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    #toast-container {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .toast {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 300px;
+        animation: slideInRight 0.3s ease;
+    }
+
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .toast.success {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .toast.error {
+        border-left: 4px solid var(--danger-color);
+    }
+
+    .toast.info {
+        border-left: 4px solid var(--info-color);
+    }
+
+    .toast i {
+        font-size: 1.5rem;
+    }
+
+    .toast.success i {
+        color: var(--success-color);
+    }
+
+    .toast.error i {
+        color: var(--danger-color);
+    }
+
+    .toast.info i {
+        color: var(--info-color);
+    }
+
+    .toast-message {
+        flex: 1;
+        font-weight: 600;
+    }
+
+    @media (max-width: 1024px) {
+        .header-content {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .tournaments-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            padding: 1rem;
+        }
+        .logo h1 {
+            font-size: 1.2rem;
+        }
+        .logo i {
+            font-size: 2rem;
+        }
+        .header-nav {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .wizard-steps {
+            padding: 0;
+        }
+        .step-label {
+            font-size: 0.75rem;
+        }
+        .step-number {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+        .upload-section {
+            grid-template-columns: 1fr;
+        }
+        .action-buttons {
+            grid-template-columns: 1fr;
+        }
+        .step-actions {
+            flex-direction: column-reverse;
+            gap: 1rem;
+        }
+        .step-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+        #toast-container {
+            bottom: 1rem;
+            right: 1rem;
+            left: 1rem;
+        }
+        .toast {
+            min-width: auto;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .tournaments-grid {
+            grid-template-columns: 1fr;
+        }
+        .tournament-card-footer {
+            flex-direction: column;
+        }
+        .tournament-card-footer .btn {
+            width: 100%;
+        }
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .mt-1 { margin-top: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .mt-3 { margin-top: 1.5rem; }
+    .mt-4 { margin-top: 2rem; }
+
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mb-2 { margin-bottom: 1rem; }
+    .mb-3 { margin-bottom: 1.5rem; }
+    .mb-4 { margin-bottom: 2rem; }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-table-tennis"></i>
+                    <h1>新潟卓球ラボ<span class="subtitle">大会管理システム</span></h1>
+                </div>
+                <nav class="header-nav">
+                    <button class="nav-btn active" data-page="tournaments">
+                        <i class="fas fa-trophy"></i> 大会一覧
+                    </button>
+                    <button class="nav-btn" data-page="create">
+                        <i class="fas fa-plus-circle"></i> 新規作成
+                    </button>
+                    <button class="nav-btn" data-page="settings">
+                        <i class="fas fa-cog"></i> 設定
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- 大会一覧ページ -->
+            <div id="tournaments-page" class="page active">
+                <div class="page-header">
+                    <h2><i class="fas fa-trophy"></i> 大会一覧</h2>
+                    <button class="btn btn-primary" id="create-new-btn">
+                        <i class="fas fa-plus"></i> 新規大会作成
+                    </button>
+                </div>
+                
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>ステータス:</label>
+                        <select id="status-filter">
+                            <option value="all">すべて</option>
+                            <option value="作成中">作成中</option>
+                            <option value="募集中">募集中</option>
+                            <option value="締切">締切</option>
+                            <option value="完了">完了</option>
+                        </select>
+                    </div>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="大会名で検索...">
+                    </div>
+                </div>
+
+                <div id="tournaments-list" class="tournaments-grid">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+
+            <!-- 新規作成ページ -->
+            <div id="create-page" class="page">
+                <div class="page-header">
+                    <h2><i class="fas fa-file-upload"></i> 新規大会作成</h2>
+                </div>
+
+                <div class="wizard-container">
+                    <!-- ステップインジケーター -->
+                    <div class="wizard-steps">
+                        <div class="step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">ファイルアップロード</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">大会情報確認</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">フォーム設定</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="4">
+                            <div class="step-number">4</div>
+                            <div class="step-label">案内・連携</div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 1: ファイルアップロード -->
+                    <div class="wizard-content" id="step-1" style="display: block;">
+                        <div class="step-content">
+                            <h3><i class="fas fa-upload"></i> STEP 1: ファイルアップロード</h3>
+                            
+                            <div class="upload-section">
+                                <div class="upload-box">
+                                    <label class="upload-label">
+                                        <i class="fas fa-file-pdf"></i>
+                                        <h4>大会要項</h4>
+                                        <p>PDF / 画像 / Word / Excel</p>
+                                        <input type="file" id="document-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style="display: none;">
+                                        <span class="file-name" id="document-filename">ファイルを選択してください</span>
+                                    </label>
+                                </div>
+
+                                <div class="upload-box">
+                                    <label class="upload-label">
+                                        <i class="fas fa-file-excel"></i>
+                                        <h4>申込用紙</h4>
+                                        <p>Excel / スプレッドシート</p>
+                                        <input type="file" id="application-file" accept=".xls,.xlsx,.csv" style="display: none;">
+                                        <span class="file-name" id="application-filename">ファイルを選択してください</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="ai-analysis" id="ai-analysis-section" style="display: none;">
+                                <div class="analysis-loading">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>AIが大会情報を解析中...</p>
+                                </div>
+                            </div>
+
+                            <div class="step-actions">
+                                <button class="btn btn-secondary" disabled>
+                                    <i class="fas fa-arrow-left"></i> 戻る
+                                </button>
+                                <button class="btn btn-primary" id="step1-next" disabled>
+                                    次へ <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2-4は文字数制限のため省略。同じHTMLをここに追加 -->
+                </div>
+            </div>
+
+            <!-- 設定ページも省略 -->
+        </main>
+
+        <!-- モーダル -->
+        <div id="tournament-detail-modal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3 id="modal-tournament-name"></h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body" id="tournament-detail-body">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- トースト通知 -->
+        <div id="toast-container"></div>
+    </div>
+
+    <!-- JavaScriptは次のコメントで分割 -->
+</body>
+</html>

@@ -1,166 +1,2126 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>新潟卓球ラボ - TTラボ 個人レッスン</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Helvetica Neue',Arial,sans-serif;color:#333;line-height:1.6}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新潟卓球ラボ - 大会管理システム</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+:root {
+    --primary-color: #FF6B35;
+    --secondary-color: #004E89;
+    --accent-color: #F77F00;
+    --success-color: #06D6A0;
+    --warning-color: #FFD60A;
+    --danger-color: #EF476F;
+    --text-dark: #2B2D42;
+    --text-light: #8D99AE;
+    --bg-light: #EDF2F4;
+    --bg-white: #FFFFFF;
+    --border-color: #D1D5DB;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+    background: linear-gradient(135deg, var(--bg-light) 0%, #ffffff 100%);
+    color: var(--text-dark);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.app-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0;
+}
+
 /* ヘッダー */
-header{background:linear-gradient(135deg,#1a3a5c,#2d6ab4);color:#fff;position:sticky;top:0;z-index:100}
-.header-inner{max-width:1100px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-icon{width:44px;height:44px;background:#e85d04;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
-.logo-text h1{font-size:1.1rem;font-weight:700}
-.logo-text p{font-size:.72rem;opacity:.8}
-nav a{color:rgba(255,255,255,.85);text-decoration:none;margin-left:20px;font-size:.88rem}
-nav a:hover{color:#fff}
-.nav-book{background:#e85d04;padding:7px 16px;border-radius:6px;font-weight:600}
-/* ヒーロー */
-.hero{background:linear-gradient(135deg,#1a3a5c 0%,#2d6ab4 60%,#1565c0 100%);color:#fff;padding:80px 20px}
-.hero-inner{max-width:900px;margin:0 auto;text-align:center}
-.hero h2{font-size:2.2rem;font-weight:700;margin-bottom:16px;line-height:1.3}
-.hero p{font-size:1rem;opacity:.85;margin-bottom:32px;max-width:600px;margin-left:auto;margin-right:auto}
-.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.btn-hero{padding:14px 32px;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
-.btn-primary{background:#e85d04;color:#fff}
-.btn-primary:hover{background:#c84a00}
-.btn-outline{background:transparent;border:2px solid rgba(255,255,255,.8);color:#fff}
-.btn-outline:hover{background:rgba(255,255,255,.1)}
-/* セクション共通 */
-section{padding:60px 20px}
-.section-inner{max-width:1100px;margin:0 auto}
-.section-title{text-align:center;font-size:1.6rem;font-weight:700;color:#1a3a5c;margin-bottom:8px}
-.section-sub{text-align:center;font-size:.88rem;color:#888;margin-bottom:36px}
-/* 特徴カード */
-.features-bg{background:#f0f4f8}
-.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
-.feat-card{background:#fff;border-radius:14px;padding:24px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.06)}
-.feat-icon{font-size:2.2rem;margin-bottom:12px}
-.feat-title{font-size:1rem;font-weight:700;color:#1a3a5c;margin-bottom:8px}
-.feat-desc{font-size:.84rem;color:#666;line-height:1.6}
-/* 料金表 */
-.price-note{text-align:center;font-size:.85rem;color:#888;margin-bottom:16px}
-.price-tabs{display:flex;justify-content:center;gap:8px;margin-bottom:20px}
-.price-tab{padding:8px 24px;border-radius:20px;border:2px solid #ddd;background:#fff;cursor:pointer;font-size:.88rem;font-weight:600}
-.price-tab.active{background:#1a3a5c;color:#fff;border-color:#1a3a5c}
-.price-table-wrap{overflow-x:auto}
-table.price-tbl{width:100%;border-collapse:collapse;font-size:.88rem}
-table.price-tbl th{background:#1a3a5c;color:#fff;padding:10px 14px;text-align:center}
-table.price-tbl td{padding:10px 14px;text-align:center;border-bottom:1px solid #eee}
-table.price-tbl tr:hover td{background:#f5f8ff}
-table.price-tbl .price-em{color:#e85d04;font-weight:700}
-.price-remark{font-size:.78rem;color:#888;margin-top:12px;text-align:center}
-/* CTA */
-.cta-section{background:linear-gradient(135deg,#1a3a5c,#2d6ab4);color:#fff;text-align:center;padding:60px 20px}
-.cta-section h2{font-size:1.8rem;font-weight:700;margin-bottom:10px}
-.cta-section p{opacity:.85;margin-bottom:28px}
-footer{background:#1a3a5c;color:rgba(255,255,255,.7);text-align:center;padding:20px;font-size:.82rem}
-@media(max-width:600px){.hero h2{font-size:1.5rem}}
-</style>
+.header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo {
+    width: 50px;
+    height: 50px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    animation: rotate 3s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.logo i {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+}
+
+.header-title h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+
+.header-title p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.nav-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.nav-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    padding: 0.7rem 1.5rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-btn:hover {
+    background: white;
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.nav-btn.active {
+    background: white;
+    color: var(--primary-color);
+}
+
+/* メインコンテンツ */
+.main-content {
+    padding: 2rem;
+}
+
+.page {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.page.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-header h2 {
+    font-size: 2rem;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.page-header p {
+    color: var(--text-light);
+    font-size: 1.1rem;
+}
+
+/* フィルターセクション */
+.filters-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.filter-group select,
+.filter-group input {
+    padding: 0.6rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* 大会グリッド */
+.tournaments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+.tournament-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.tournament-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.tournament-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+}
+
+.tournament-header h3 {
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge.作成中 {
+    background: #E0E7FF;
+    color: #4F46E5;
+}
+
+.status-badge.募集中 {
+    background: #D1FAE5;
+    color: #059669;
+}
+
+.status-badge.締切 {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+.status-badge.完了 {
+    background: #E5E7EB;
+    color: #6B7280;
+}
+
+.tournament-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+}
+
+.info-row i {
+    color: var(--primary-color);
+    width: 20px;
+}
+
+/* 空状態 */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ウィザード */
+.wizard-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.wizard-steps {
+    display: flex;
+    background: var(--bg-light);
+    padding: 1rem 2rem;
+    gap: 1rem;
+    overflow-x: auto;
+}
+
+.wizard-step {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem;
+    border-radius: 10px;
+    background: white;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.wizard-step.active {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.wizard-step.completed {
+    background: var(--success-color);
+    color: white;
+    border-color: var(--success-color);
+}
+
+.step-number {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: var(--bg-light);
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.wizard-step.active .step-number {
+    background: white;
+    color: var(--primary-color);
+}
+
+.wizard-step.completed .step-number {
+    background: rgba(255,255,255,0.3);
+    color: white;
+}
+
+.step-info h4 {
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+}
+
+.step-info p {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.wizard-content {
+    padding: 2rem;
+}
+
+.step-content {
+    display: none;
+}
+
+.step-content.active {
+    display: block;
+}
+
+.step-section {
+    margin-bottom: 2rem;
+}
+
+.step-section h3 {
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step-section h3 i {
+    color: var(--primary-color);
+}
+
+/* アップロードエリア */
+.upload-area {
+    border: 3px dashed var(--border-color);
+    border-radius: 16px;
+    padding: 3rem;
+    text-align: center;
+    background: var(--bg-light);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: var(--primary-color);
+    background: white;
+}
+
+.upload-area i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.upload-area h4 {
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.upload-area p {
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+.file-input {
+    display: none;
+}
+
+.upload-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.upload-btn:hover {
+    background: var(--accent-color);
+}
+
+.file-info {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+    border: 2px solid var(--success-color);
+}
+
+.file-info p {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+/* AI解析 */
+.ai-analysis {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    margin-bottom: 2rem;
+}
+
+.ai-analysis h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* フォームグリッド */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.required {
+    color: var(--danger-color);
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    padding: 0.8rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-group small {
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+
+/* カテゴリー */
+.categories-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.category-tag {
+    background: var(--secondary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.category-tag button {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.add-category {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.add-category input {
+    flex: 1;
+}
+
+.btn-secondary {
+    background: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* フォームプレビュー */
+.form-preview {
+    background: var(--bg-light);
+    border-radius: 16px;
+    padding: 2rem;
+    border: 2px solid var(--border-color);
+}
+
+.preview-field {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.preview-field strong {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.preview-field input,
+.preview-field select,
+.preview-field textarea {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-light);
+}
+
+/* LINE案内 */
+.line-announcement {
+    background: #06C755;
+    color: white;
+    border-radius: 16px;
+    padding: 2rem;
+}
+
+.line-announcement h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.line-message-box {
+    background: white;
+    color: var(--text-dark);
+    padding: 1.5rem;
+    border-radius: 10px;
+    white-space: pre-wrap;
+    font-family: 'Noto Sans JP', sans-serif;
+    line-height: 1.8;
+    margin-bottom: 1rem;
+}
+
+.btn-copy {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 2px solid white;
+    padding: 0.8rem 2rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-copy:hover {
+    background: white;
+    color: #06C755;
+}
+
+/* 統合セクション */
+.integration-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 2px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.integration-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.integration-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn-integration {
+    flex: 1;
+    min-width: 200px;
+    padding: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.btn-integration.calendar {
+    border-color: #4285F4;
+    color: #4285F4;
+}
+
+.btn-integration.calendar:hover {
+    background: #4285F4;
+    color: white;
+}
+
+.btn-integration.drive {
+    border-color: #34A853;
+    color: #34A853;
+}
+
+.btn-integration.drive:hover {
+    background: #34A853;
+    color: white;
+}
+
+/* 完了メッセージ */
+.completion-message {
+    text-align: center;
+    padding: 3rem;
+    background: linear-gradient(135deg, var(--success-color) 0%, #04AA7F 100%);
+    color: white;
+    border-radius: 16px;
+}
+
+.completion-message i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.completion-message h3 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.completion-message p {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+/* ウィザードナビゲーション */
+.wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border-color);
+    margin-top: 2rem;
+}
+
+.btn-outline {
+    background: white;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+    padding: 0.8rem 2rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-outline:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 設定ページ */
+.settings-sections {
+    display: grid;
+    gap: 2rem;
+}
+
+.settings-section {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.settings-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+}
+
+.settings-section h3 i {
+    color: var(--primary-color);
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* モーダル */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.3rem;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.detail-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.detail-item {
+    display: flex;
+    gap: 1rem;
+}
+
+.detail-item i {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    width: 25px;
+}
+
+.detail-item-content h4 {
+    color: var(--text-dark);
+    margin-bottom: 0.3rem;
+}
+
+.detail-item-content p {
+    color: var(--text-light);
+}
+
+/* トースト */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 300px;
+    z-index: 2000;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.toast.success {
+    border-left: 4px solid var(--success-color);
+}
+
+.toast.success i {
+    color: var(--success-color);
+    font-size: 1.5rem;
+}
+
+.toast-content p {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+}
+
+.toast-content span {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .nav-buttons {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .tournaments-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .wizard-steps {
+        flex-direction: column;
+    }
+}
+    </style>
 </head>
 <body>
-<header>
-  <div class="header-inner">
-    <div class="logo">
-      <div class="logo-icon">🏓</div>
-      <div class="logo-text"><h1>新潟卓球ラボ</h1><p>TTラボ・個人レッスン</p></div>
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">
+                        <i class="fas fa-table-tennis"></i>
+                    </div>
+                    <div class="header-title">
+                        <h1>新潟卓球ラボ</h1>
+                        <p>大会管理システム</p>
+                    </div>
+                </div>
+                <nav class="nav-buttons">
+                    <button class="nav-btn active" data-page="tournaments">
+                        <i class="fas fa-list"></i> 大会一覧
+                    </button>
+                    <button class="nav-btn" data-page="create">
+                        <i class="fas fa-plus-circle"></i> 新規作成
+                    </button>
+                    <button class="nav-btn" data-page="settings">
+                        <i class="fas fa-cog"></i> 設定
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- 大会一覧ページ -->
+            <div id="tournaments-page" class="page active">
+                <div class="page-header">
+                    <h2><i class="fas fa-trophy"></i> 大会一覧</h2>
+                    <p>作成した大会の一覧です。</p>
+                </div>
+
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label>ステータス:</label>
+                        <select id="status-filter">
+                            <option value="all">すべて</option>
+                            <option value="作成中">作成中</option>
+                            <option value="募集中">募集中</option>
+                            <option value="締切">締切</option>
+                            <option value="完了">完了</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>検索:</label>
+                        <input type="text" id="search-input" placeholder="大会名・会場名で検索...">
+                    </div>
+                    <button class="btn-primary" id="new-tournament-btn">
+                        <i class="fas fa-plus"></i> 新規大会作成
+                    </button>
+                </div>
+
+                <div id="tournaments-grid" class="tournaments-grid"></div>
+
+                <div id="empty-state" class="empty-state hidden">
+                    <i class="fas fa-inbox"></i>
+                    <h3>まだ大会が作成されていません</h3>
+                    <p>「新規作成」ボタンから最初の大会を作成しましょう。</p>
+                </div>
+            </div>
+
+            <!-- 新規作成ページ -->
+            <div id="create-page" class="page">
+                <div class="page-header">
+                    <h2><i class="fas fa-plus-circle"></i> 新規大会作成</h2>
+                    <p>4つのステップで簡単に大会を作成できます。</p>
+                </div>
+
+                <div class="wizard-container">
+                    <div class="wizard-steps">
+                        <div class="wizard-step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-info">
+                                <h4>要項アップロード</h4>
+                                <p>大会要項をアップロード</p>
+                            </div>
+                        </div>
+                        <div class="wizard-step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-info">
+                                <h4>情報確認</h4>
+                                <p>AI解析結果を確認</p>
+                            </div>
+                        </div>
+                        <div class="wizard-step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-info">
+                                <h4>フォーム作成</h4>
+                                <p>Googleフォーム作成</p>
+                            </div>
+                        </div>
+                        <div class="wizard-step" data-step="4">
+                            <div class="step-number">4</div>
+                            <div class="step-info">
+                                <h4>LINE案内</h4>
+                                <p>LINE案内文を生成</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wizard-content">
+                        <!-- STEP 1 -->
+                        <div id="step-1" class="step-content active">
+                            <div class="step-section">
+                                <h3><i class="fas fa-file-upload"></i> 大会要項をアップロード</h3>
+                                <p class="mb-2">大会要項をアップロードしてください。</p>
+                                
+                                <div class="upload-area" id="upload-area">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <h4>ファイルをドラッグ＆ドロップ</h4>
+                                    <p>または</p>
+                                    <button class="upload-btn" type="button" onclick="document.getElementById('document-file').click()">
+                                        ファイルを選択
+                                    </button>
+                                    <input type="file" id="document-file" class="file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                </div>
+
+                                <div id="file-info" class="file-info hidden">
+                                    <p><i class="fas fa-check-circle"></i> <span id="file-name"></span></p>
+                                </div>
+                            </div>
+
+                            <div class="wizard-nav">
+                                <button class="btn-outline" type="button" onclick="goToPage('tournaments')">
+                                    <i class="fas fa-times"></i> キャンセル
+                                </button>
+                                <button class="btn-primary" id="step-1-next" type="button" disabled>
+                                    次へ <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- STEP 2 -->
+                        <div id="step-2" class="step-content">
+                            <div class="ai-analysis" id="ai-analysis">
+                                <h4><i class="fas fa-magic"></i> AI解析中...</h4>
+                                <div style="text-align: center; padding: 2rem;">
+                                    <div class="loading-spinner"></div>
+                                    <p>大会要項から情報を抽出しています...</p>
+                                </div>
+                            </div>
+
+                            <div class="step-section">
+                                <h3><i class="fas fa-edit"></i> 大会情報を確認・編集</h3>
+                                
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-trophy"></i> 大会名 <span class="required">*</span></label>
+                                        <input type="text" id="tournament-name" placeholder="例: 第5回 沼垂オープン" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label><i class="fas fa-calendar"></i> 開催日 <span class="required">*</span></label>
+                                        <input type="date" id="tournament-date" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label><i class="fas fa-map-marker-alt"></i> 会場 <span class="required">*</span></label>
+                                        <input type="text" id="tournament-venue" placeholder="例: 亀田総合体育館" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label><i class="fas fa-clock"></i> 開始時刻</label>
+                                        <input type="time" id="tournament-time" value="09:00">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label><i class="fas fa-yen-sign"></i> 参加費</label>
+                                        <input type="text" id="tournament-fee" placeholder="例: 1,000円">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label><i class="fas fa-calendar-times"></i> 申込締切 <span class="required">*</span></label>
+                                        <input type="date" id="tournament-deadline" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mt-3">
+                                    <label><i class="fas fa-align-left"></i> 大会概要</label>
+                                    <textarea id="tournament-description" placeholder="大会の概要..." rows="4"></textarea>
+                                </div>
+
+                                <div class="form-group mt-3">
+                                    <label><i class="fas fa-list-ul"></i> 参加カテゴリー</label>
+                                    <div id="categories-list" class="categories-list"></div>
+                                    <div class="add-category mt-2">
+                                        <input type="text" id="new-category" placeholder="カテゴリー名を入力...">
+                                        <button class="btn-secondary" type="button" id="add-category-btn">
+                                            <i class="fas fa-plus"></i> 追加
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="wizard-nav">
+                                <button class="btn-outline" type="button" onclick="prevStep()">
+                                    <i class="fas fa-arrow-left"></i> 戻る
+                                </button>
+                                <button class="btn-primary" type="button" id="step-2-next">
+                                    次へ <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- STEP 3 -->
+                        <div id="step-3" class="step-content">
+                            <div class="step-section">
+                                <h3><i class="fab fa-google"></i> Googleフォーム構造</h3>
+                                
+                                <div class="form-preview">
+                                    <h4>📋 フォーム項目プレビュー</h4>
+                                    <div id="form-preview-content"></div>
+                                </div>
+
+                                <div class="integration-section mt-3">
+                                    <h4><i class="fab fa-google"></i> Googleフォーム設定</h4>
+                                    <div class="form-group">
+                                        <label>GoogleフォームURL</label>
+                                        <input type="url" id="form-url" placeholder="https://forms.gle/...">
+                                    </div>
+                                    <div class="form-group mt-2">
+                                        <label>スプレッドシートURL</label>
+                                        <input type="url" id="spreadsheet-url" placeholder="https://docs.google.com/spreadsheets/...">
+                                    </div>
+                                </div>
+
+                                <button class="btn-primary mt-2" type="button" id="copy-form-structure">
+                                    <i class="fas fa-copy"></i> フォーム構造をコピー
+                                </button>
+                            </div>
+
+                            <div class="wizard-nav">
+                                <button class="btn-outline" type="button" onclick="prevStep()">
+                                    <i class="fas fa-arrow-left"></i> 戻る
+                                </button>
+                                <button class="btn-primary" type="button" id="step-3-next">
+                                    次へ <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- STEP 4 -->
+                        <div id="step-4" class="step-content">
+                            <div class="step-section">
+                                <h3><i class="fab fa-line"></i> LINE案内文</h3>
+                                
+                                <div class="line-announcement">
+                                    <h4><i class="fab fa-line"></i> LINEメッセージ</h4>
+                                    <div class="line-message-box" id="line-message-content"></div>
+                                    <button class="btn-copy" type="button" id="copy-line-message">
+                                        <i class="fas fa-copy"></i> メッセージをコピー
+                                    </button>
+                                </div>
+
+                                <div class="integration-section mt-3">
+                                    <h4><i class="fas fa-link"></i> リンク設定</h4>
+                                    <div class="integration-buttons">
+                                        <button class="btn-integration calendar" type="button" id="add-to-calendar">
+                                            <i class="fab fa-google"></i>
+                                            <div>
+                                                <div>Googleカレンダーに追加</div>
+                                                <small>締切日を登録</small>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="wizard-nav">
+                                <button class="btn-outline" type="button" onclick="prevStep()">
+                                    <i class="fas fa-arrow-left"></i> 戻る
+                                </button>
+                                <button class="btn-primary" type="button" id="complete-tournament">
+                                    <i class="fas fa-check"></i> 大会作成を完了
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 完了 -->
+                        <div id="completion" class="step-content">
+                            <div class="completion-message">
+                                <i class="fas fa-check-circle"></i>
+                                <h3>大会作成が完了しました！</h3>
+                                <p>大会一覧から確認できます。</p>
+                                <button class="btn-primary" type="button" onclick="resetAndGoHome()">
+                                    <i class="fas fa-list"></i> 大会一覧へ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 設定ページ -->
+            <div id="settings-page" class="page">
+                <div class="page-header">
+                    <h2><i class="fas fa-cog"></i> 設定</h2>
+                    <p>システムの設定を管理します。</p>
+                </div>
+
+                <div class="settings-sections">
+                    <div class="settings-section">
+                        <h3><i class="fas fa-envelope"></i> メール設定</h3>
+                        <div class="form-group">
+                            <label>メールアドレス</label>
+                            <input type="email" id="settings-email" placeholder="your-email@example.com">
+                        </div>
+                        <div class="form-group mt-2">
+                            <label>メール署名</label>
+                            <textarea id="settings-signature" rows="4"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3><i class="fas fa-database"></i> データ管理</h3>
+                        <p class="mb-2">すべての大会データをクリアします。</p>
+                        <button class="btn-danger" type="button" id="clear-data-btn">
+                            <i class="fas fa-trash-alt"></i> すべてのデータをクリア
+                        </button>
+                    </div>
+
+                    <button class="btn-primary" type="button" id="save-settings-btn">
+                        <i class="fas fa-save"></i> 設定を保存
+                    </button>
+                </div>
+            </div>
+        </main>
     </div>
-    <nav>
-      <a href="booking.html" class="nav-book">📋 予約する</a>
-      <a href="admin.html">🔒 管理</a>
-    </nav>
-  </div>
-</header>
 
-<div class="hero">
-  <div class="hero-inner">
-    <h2>🏓 あなたの卓球を次のレベルへ</h2>
-    <p>新潟県内の施設でフリーランスコーチ「ともき」が個別指導。初心者から上級者まで対応します。</p>
-    <div class="hero-btns">
-      <a href="booking.html" class="btn-hero btn-primary">📋 今すぐ予約する</a>
-      <a href="#features" class="btn-hero btn-outline">詳しく見る</a>
+    <!-- モーダル -->
+    <div id="tournament-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-tournament-name">大会名</h3>
+                <button class="modal-close" type="button" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid" id="modal-tournament-details"></div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
-<section class="features-bg" id="features">
-  <div class="section-inner">
-    <div class="section-title">レッスンの特徴</div>
-    <div class="section-sub">一人ひとりに合わせた個別指導</div>
-    <div class="feat-grid">
-      <div class="feat-card"><div class="feat-icon">🎯</div><div class="feat-title">完全個別指導</div><div class="feat-desc">あなたのペース・課題に合わせたオーダーメイドのレッスン。グループでは学べない細かい技術を習得。</div></div>
-      <div class="feat-card"><div class="feat-icon">📍</div><div class="feat-title">新潟県内各地</div><div class="feat-desc">燕市・三条市・加茂市など新潟県内の複数施設に対応。ご希望の場所でレッスンを受けられます。</div></div>
-      <div class="feat-card"><div class="feat-icon">⏰</div><div class="feat-title">柔軟な時間設定</div><div class="feat-desc">60分〜180分でご希望に合わせて設定可能。コーチのスケジュールをリアルタイムで確認できます。</div></div>
-      <div class="feat-card"><div class="feat-icon">¥</div><div class="feat-title">明確な料金体系</div><div class="feat-desc">社会人・ジュニアの区分と人数に応じた明確な料金設定。施設利用料は別途実費のみ。</div></div>
-    </div>
-  </div>
-</section>
-
-<section id="price">
-  <div class="section-inner">
-    <div class="section-title">料金表</div>
-    <div class="section-sub">すべて税込・施設利用料別</div>
-    <p class="price-note">受講区分・参加人数・時間に応じて自動計算されます。予約フォームでリアルタイム確認可能。</p>
-    <div class="price-tabs">
-      <button class="price-tab active" onclick="switchPrice('adult',this)">社会人</button>
-      <button class="price-tab" onclick="switchPrice('junior',this)">ジュニア（中学生以下）</button>
-    </div>
-    <div class="price-table-wrap">
-      <table class="price-tbl" id="price_table">
-        <thead><tr><th>時間 \ 人数</th><th>1名</th><th>2名</th><th>3名</th><th>4名</th></tr></thead>
-        <tbody id="price_body"></tbody>
-      </table>
-    </div>
-    <p class="price-remark">※ 施設利用料は別途実費（施設により異なります）</p>
-  </div>
-</section>
-
-<div class="cta-section">
-  <h2>レッスンのご予約はこちら</h2>
-  <p>月曜定休・9:00〜21:00対応</p>
-  <a href="booking.html" class="btn-hero btn-primary">📋 予約フォームへ</a>
-</div>
-
-<footer>© 2025 新潟卓球ラボ（TTラボ）All Rights Reserved.</footer>
-
-<script>
-const PRICE_TABLE = {
-  adult: {
-    1: {60:3000,90:4500,120:6000,150:7500,180:9000},
-    2: {60:3500,90:5250,120:7000,150:8750,180:10500},
-    3: {60:3900,90:5850,120:7800,150:9750,180:11700},
-    4: {60:4600,90:6900,120:9200,150:11500,180:13800}
-  },
-  junior: {
-    1: {60:2500,90:3750,120:5000,150:6250,180:7500},
-    2: {60:3000,90:4500,120:6000,150:7500,180:9000},
-    3: {60:3600,90:5400,120:7200,150:9000,180:10800},
-    4: {60:4000,90:6000,120:8000,150:10000,180:12000}
-  }
+    <script>
+// グローバル状態
+const AppState = {
+    currentPage: 'tournaments',
+    currentStep: 1,
+    tournaments: [],
+    currentTournament: {
+        categories: []
+    },
+    settings: {
+        emailAddress: 'niigata_ttlabo@icloud.com',
+        emailSignature: '新潟卓球ラボ\n監督: [あなたの名前]\nEmail: niigata_ttlabo@icloud.com'
+    }
 };
 
-let currentCat = 'adult';
+// 初期化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🏓 新潟卓球ラボ 起動');
+    loadSettings();
+    loadTournaments();
+    setupEventListeners();
+    renderTournaments();
+});
 
-function switchPrice(cat, btn) {
-  currentCat = cat;
-  document.querySelectorAll('.price-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderPriceTable();
+// イベントリスナー設定
+function setupEventListeners() {
+    // ナビゲーション
+    document.querySelectorAll('.nav-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const page = btn.getAttribute('data-page');
+            goToPage(page);
+        });
+    });
+
+    // 新規大会作成
+    const newBtn = document.getElementById('new-tournament-btn');
+    if (newBtn) {
+        newBtn.addEventListener('click', function() {
+            goToPage('create');
+        });
+    }
+
+    // ファイルアップロード
+    const fileInput = document.getElementById('document-file');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileSelect);
+    }
+
+    // ステップナビゲーション
+    const step1Next = document.getElementById('step-1-next');
+    if (step1Next) {
+        step1Next.addEventListener('click', function() {
+            nextStep();
+        });
+    }
+
+    const step2Next = document.getElementById('step-2-next');
+    if (step2Next) {
+        step2Next.addEventListener('click', function() {
+            nextStep();
+        });
+    }
+
+    const step3Next = document.getElementById('step-3-next');
+    if (step3Next) {
+        step3Next.addEventListener('click', function() {
+            nextStep();
+        });
+    }
+
+    const completeBtn = document.getElementById('complete-tournament');
+    if (completeBtn) {
+        completeBtn.addEventListener('click', completeTournament);
+    }
+
+    // カテゴリー管理
+    const addCatBtn = document.getElementById('add-category-btn');
+    if (addCatBtn) {
+        addCatBtn.addEventListener('click', addCategory);
+    }
+
+    const newCatInput = document.getElementById('new-category');
+    if (newCatInput) {
+        newCatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addCategory();
+            }
+        });
+    }
+
+    // フォーム入力監視
+    ['tournament-name', 'tournament-date', 'tournament-deadline'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', validateStep2);
+        }
+    });
+
+    // コピーボタン
+    const copyFormBtn = document.getElementById('copy-form-structure');
+    if (copyFormBtn) {
+        copyFormBtn.addEventListener('click', copyFormStructure);
+    }
+
+    const copyLineBtn = document.getElementById('copy-line-message');
+    if (copyLineBtn) {
+        copyLineBtn.addEventListener('click', copyLineMessage);
+    }
+
+    // 統合
+    const calBtn = document.getElementById('add-to-calendar');
+    if (calBtn) {
+        calBtn.addEventListener('click', addToCalendar);
+    }
+
+    // 設定
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', saveSettings);
+    }
+
+    const clearDataBtn = document.getElementById('clear-data-btn');
+    if (clearDataBtn) {
+        clearDataBtn.addEventListener('click', clearAllData);
+    }
+
+    // フィルター
+    const statusFilter = document.getElementById('status-filter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', renderTournaments);
+    }
+
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', renderTournaments);
+    }
+
+    // モーダル
+    const modal = document.getElementById('tournament-modal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target.id === 'tournament-modal') {
+                closeModal();
+            }
+        });
+    }
 }
 
-function renderPriceTable() {
-  const tbody = document.getElementById('price_body');
-  const data = PRICE_TABLE[currentCat];
-  const durations = [60,90,120,150,180];
-  tbody.innerHTML = durations.map(d => {
-    const tds = [1,2,3,4].map(n => `<td class="price-em">¥${data[n][d].toLocaleString()}</td>`).join('');
-    return `<tr><td><b>${d}分</b></td>${tds}</tr>`;
-  }).join('');
+// ページナビゲーション
+function goToPage(pageName) {
+    document.querySelectorAll('.page').forEach(function(page) {
+        page.classList.remove('active');
+    });
+
+    document.querySelectorAll('.nav-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+    });
+
+    const targetPage = document.getElementById(pageName + '-page');
+    if (targetPage) {
+        targetPage.classList.add('active');
+    }
+
+    const targetBtn = document.querySelector('[data-page="' + pageName + '"]');
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    }
+
+    AppState.currentPage = pageName;
+
+    if (pageName === 'create') {
+        resetWizard();
+    } else if (pageName === 'tournaments') {
+        renderTournaments();
+    } else if (pageName === 'settings') {
+        loadSettingsToForm();
+    }
 }
 
-renderPriceTable();
-</script>
+// ウィザード管理
+function resetWizard() {
+    AppState.currentStep = 1;
+    AppState.currentTournament = { categories: [] };
+    
+    document.querySelectorAll('.wizard-step').forEach(function(step, index) {
+        step.classList.remove('active', 'completed');
+        if (index === 0) {
+            step.classList.add('active');
+        }
+    });
+
+    document.querySelectorAll('.step-content').forEach(function(content, index) {
+        content.classList.remove('active');
+        if (index === 0) {
+            content.classList.add('active');
+        }
+    });
+
+    const fileInput = document.getElementById('document-file');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+
+    const fileInfo = document.getElementById('file-info');
+    if (fileInfo) {
+        fileInfo.classList.add('hidden');
+    }
+
+    const step1Next = document.getElementById('step-1-next');
+    if (step1Next) {
+        step1Next.disabled = true;
+    }
+
+    ['tournament-name', 'tournament-date', 'tournament-venue', 'tournament-time', 
+     'tournament-fee', 'tournament-deadline', 'tournament-description'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = '';
+        }
+    });
+
+    const catList = document.getElementById('categories-list');
+    if (catList) {
+        catList.innerHTML = '';
+    }
+}
+
+function nextStep() {
+    const currentStep = AppState.currentStep;
+    
+    if (currentStep === 1) {
+        simulateAIAnalysis();
+    } else if (currentStep === 2) {
+        saveTournamentInfo();
+        generateFormPreview();
+    } else if (currentStep === 3) {
+        generateLineMessage();
+    }
+    
+    AppState.currentStep = AppState.currentStep + 1;
+    updateWizardUI();
+}
+
+function prevStep() {
+    AppState.currentStep = AppState.currentStep - 1;
+    updateWizardUI();
+}
+
+function updateWizardUI() {
+    const currentStep = AppState.currentStep;
+    
+    document.querySelectorAll('.wizard-step').forEach(function(step, index) {
+        const stepNum = index + 1;
+        step.classList.remove('active', 'completed');
+        
+        if (stepNum === currentStep) {
+            step.classList.add('active');
+        } else if (stepNum < currentStep) {
+            step.classList.add('completed');
+        }
+    });
+    
+    document.querySelectorAll('.step-content').forEach(function(content, index) {
+        content.classList.remove('active');
+        if (index + 1 === currentStep) {
+            content.classList.add('active');
+        }
+    });
+}
+
+// STEP 1
+function handleFileSelect() {
+    const fileInput = document.getElementById('document-file');
+    const file = fileInput.files[0];
+    
+    if (file) {
+        const fileName = document.getElementById('file-name');
+        if (fileName) {
+            fileName.textContent = file.name;
+        }
+
+        const fileInfo = document.getElementById('file-info');
+        if (fileInfo) {
+            fileInfo.classList.remove('hidden');
+        }
+
+        const step1Next = document.getElementById('step-1-next');
+        if (step1Next) {
+            step1Next.disabled = false;
+        }
+
+        AppState.currentTournament.fileName = file.name;
+        
+        showToast('success', 'ファイルアップロード完了', file.name);
+    }
+}
+
+// STEP 2
+function simulateAIAnalysis() {
+    const analysisEl = document.getElementById('ai-analysis');
+    
+    setTimeout(function() {
+        if (analysisEl) {
+            analysisEl.innerHTML = '<h4><i class="fas fa-check-circle"></i> AI解析完了！</h4><p>大会要項から情報を抽出しました。</p>';
+            analysisEl.style.background = 'linear-gradient(135deg, var(--success-color) 0%, #04AA7F 100%)';
+        }
+        
+        const today = new Date();
+        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 15);
+        const deadline = new Date(nextMonth);
+        deadline.setDate(deadline.getDate() - 7);
+        
+        const nameInput = document.getElementById('tournament-name');
+        if (nameInput) {
+            nameInput.value = '第5回 沼垂オープン卓球大会';
+        }
+
+        const dateInput = document.getElementById('tournament-date');
+        if (dateInput) {
+            dateInput.value = nextMonth.toISOString().split('T')[0];
+        }
+
+        const venueInput = document.getElementById('tournament-venue');
+        if (venueInput) {
+            venueInput.value = '亀田総合体育館';
+        }
+
+        const timeInput = document.getElementById('tournament-time');
+        if (timeInput) {
+            timeInput.value = '09:00';
+        }
+
+        const feeInput = document.getElementById('tournament-fee');
+        if (feeInput) {
+            feeInput.value = '1,000円';
+        }
+
+        const deadlineInput = document.getElementById('tournament-deadline');
+        if (deadlineInput) {
+            deadlineInput.value = deadline.toISOString().split('T')[0];
+        }
+
+        const descInput = document.getElementById('tournament-description');
+        if (descInput) {
+            descInput.value = 'ジュニア選手を対象とした卓球大会です。';
+        }
+
+        AppState.currentTournament.categories = ['男子の部', '女子の部', 'ダブルスの部'];
+        renderCategories();
+        
+        validateStep2();
+    }, 2000);
+}
+
+function saveTournamentInfo() {
+    AppState.currentTournament.name = document.getElementById('tournament-name').value;
+    AppState.currentTournament.date = document.getElementById('tournament-date').value;
+    AppState.currentTournament.venue = document.getElementById('tournament-venue').value;
+    AppState.currentTournament.time = document.getElementById('tournament-time').value;
+    AppState.currentTournament.fee = document.getElementById('tournament-fee').value;
+    AppState.currentTournament.deadline = document.getElementById('tournament-deadline').value;
+    AppState.currentTournament.description = document.getElementById('tournament-description').value;
+}
+
+function validateStep2() {
+    const name = document.getElementById('tournament-name').value;
+    const date = document.getElementById('tournament-date').value;
+    const deadline = document.getElementById('tournament-deadline').value;
+    
+    const isValid = name && date && deadline;
+    const nextBtn = document.getElementById('step-2-next');
+    if (nextBtn) {
+        nextBtn.disabled = !isValid;
+    }
+}
+
+function addCategory() {
+    const input = document.getElementById('new-category');
+    const category = input.value.trim();
+    
+    if (category && AppState.currentTournament.categories.indexOf(category) === -1) {
+        AppState.currentTournament.categories.push(category);
+        renderCategories();
+        input.value = '';
+        showToast('success', 'カテゴリー追加', category);
+    }
+}
+
+function removeCategory(category) {
+    AppState.currentTournament.categories = AppState.currentTournament.categories.filter(function(c) {
+        return c !== category;
+    });
+    renderCategories();
+    showToast('info', 'カテゴリー削除', category);
+}
+
+function renderCategories() {
+    const container = document.getElementById('categories-list');
+    if (!container) return;
+    
+    container.innerHTML = AppState.currentTournament.categories.map(function(cat) {
+        return '<div class="category-tag">' + cat + '<button onclick="removeCategory(\'' + cat + '\')"><i class="fas fa-times"></i></button></div>';
+    }).join('');
+}
+
+// STEP 3
+function generateFormPreview() {
+    const tournament = AppState.currentTournament;
+    const container = document.getElementById('form-preview-content');
+    
+    if (!container) return;
+    
+    const fields = [
+        { label: '選手氏名', type: 'text', required: true },
+        { label: '学年', type: 'select', options: ['小学1年', '小学2年', '小学3年', '小学4年', '小学5年', '小学6年'], required: true },
+        { label: '参加カテゴリー', type: 'select', options: tournament.categories, required: true },
+        { label: '保護者氏名', type: 'text', required: true },
+        { label: '緊急連絡先', type: 'text', required: true },
+        { label: 'メールアドレス', type: 'email', required: true }
+    ];
+    
+    container.innerHTML = fields.map(function(field) {
+        var html = '<div class="preview-field"><strong>' + field.label;
+        if (field.required) {
+            html += ' *';
+        }
+        html += '</strong>';
+        
+        if (field.type === 'select') {
+            html += '<select disabled><option>選択してください</option>';
+            field.options.forEach(function(opt) {
+                html += '<option>' + opt + '</option>';
+            });
+            html += '</select>';
+        } else if (field.type === 'textarea') {
+            html += '<textarea disabled placeholder="入力してください..."></textarea>';
+        } else {
+            html += '<input type="' + field.type + '" disabled placeholder="入力してください...">';
+        }
+        html += '</div>';
+        return html;
+    }).join('');
+    
+    AppState.currentTournament.formFields = fields;
+}
+
+function copyFormStructure() {
+    const tournament = AppState.currentTournament;
+    
+    var text = '【Googleフォーム作成手順】\n\n';
+    text += '1. https://forms.google.com にアクセス\n';
+    text += '2. 新規フォーム作成\n';
+    text += '3. タイトル: ' + tournament.name + ' 申込フォーム\n\n';
+    text += '4. 以下の質問を追加:\n\n';
+    
+    tournament.formFields.forEach(function(field, index) {
+        text += '【質問' + (index + 1) + '】\n';
+        text += '質問: ' + field.label + '\n';
+        text += '形式: ' + (field.type === 'select' ? 'プルダウン' : '記述式') + '\n';
+        if (field.options) {
+            text += '選択肢:\n';
+            field.options.forEach(function(opt) {
+                text += '  - ' + opt + '\n';
+            });
+        }
+        text += '必須: ' + (field.required ? 'はい' : 'いいえ') + '\n\n';
+    });
+    
+    copyToClipboard(text);
+    showToast('success', 'コピー完了', 'フォーム構造をコピーしました');
+}
+
+// STEP 4
+function generateLineMessage() {
+    const tournament = AppState.currentTournament;
+    const formUrl = document.getElementById('form-url').value || '[GoogleフォームURL]';
+    
+    const tournamentDate = new Date(tournament.date);
+    const deadlineDate = new Date(tournament.deadline);
+    
+    var message = '【大会のお知らせ】\n\n';
+    message += tournament.name + '\n\n';
+    message += '📅 開催日: ' + tournamentDate.toLocaleDateString('ja-JP') + ' ' + tournament.time + '〜\n';
+    message += '📍 会場: ' + tournament.venue + '\n';
+    message += '💰 参加費: ' + tournament.fee + '\n';
+    message += '⏰ 申込締切: ' + deadlineDate.toLocaleDateString('ja-JP') + '\n\n';
+    message += tournament.description + '\n\n';
+    message += '【参加カテゴリー】\n';
+    tournament.categories.forEach(function(cat) {
+        message += '・' + cat + '\n';
+    });
+    message += '\n【申込方法】\n';
+    message += '下記のGoogleフォームからお申込みください\n';
+    message += formUrl + '\n\n';
+    message += AppState.settings.emailSignature;
+    
+    const container = document.getElementById('line-message-content');
+    if (container) {
+        container.textContent = message;
+    }
+
+    AppState.currentTournament.lineMessage = message;
+}
+
+function copyLineMessage() {
+    const message = document.getElementById('line-message-content').textContent;
+    copyToClipboard(message);
+    showToast('success', 'コピー完了', 'LINE案内文をコピーしました');
+}
+
+// 統合機能
+function addToCalendar() {
+    const tournament = AppState.currentTournament;
+    const deadline = new Date(tournament.deadline);
+    
+    const title = '【締切】' + tournament.name;
+    const details = '申込締切日です。\n会場: ' + tournament.venue;
+    
+    const startDate = deadline.toISOString().replace(/-|:|\.\d+/g, '');
+    const endDate = new Date(deadline.getTime() + 3600000).toISOString().replace(/-|:|\.\d+/g, '');
+    
+    const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + 
+                encodeURIComponent(title) + 
+                '&dates=' + startDate + '/' + endDate + 
+                '&details=' + encodeURIComponent(details);
+    
+    window.open(url, '_blank');
+    showToast('success', 'カレンダー連携', 'Googleカレンダーを開きました');
+}
+
+// 大会作成完了
+function completeTournament() {
+    const tournament = {
+        id: generateUUID(),
+        name: AppState.currentTournament.name,
+        date: AppState.currentTournament.date,
+        venue: AppState.currentTournament.venue,
+        time: AppState.currentTournament.time,
+        fee: AppState.currentTournament.fee,
+        deadline: AppState.currentTournament.deadline,
+        description: AppState.currentTournament.description,
+        categories: AppState.currentTournament.categories,
+        formUrl: document.getElementById('form-url').value || '',
+        spreadsheetUrl: document.getElementById('spreadsheet-url').value || '',
+        status: '募集中',
+        createdAt: new Date().toISOString()
+    };
+    
+    AppState.tournaments.push(tournament);
+    saveTournamentsToStorage();
+    
+    AppState.currentStep = 5;
+    updateWizardUI();
+    
+    showToast('success', '大会作成完了', tournament.name);
+}
+
+function resetAndGoHome() {
+    resetWizard();
+    goToPage('tournaments');
+}
+
+// 大会一覧
+function loadTournaments() {
+    const stored = localStorage.getItem('ttlab_tournaments');
+    if (stored) {
+        try {
+            AppState.tournaments = JSON.parse(stored);
+        } catch (e) {
+            console.error('Failed to load:', e);
+            AppState.tournaments = [];
+        }
+    }
+}
+
+function saveTournamentsToStorage() {
+    localStorage.setItem('ttlab_tournaments', JSON.stringify(AppState.tournaments));
+}
+
+function renderTournaments() {
+    const grid = document.getElementById('tournaments-grid');
+    const emptyState = document.getElementById('empty-state');
+    
+    if (!grid || !emptyState) return;
+    
+    const filtered = filterTournamentsList();
+    
+    if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+    } else {
+        emptyState.classList.add('hidden');
+        grid.innerHTML = filtered.map(function(tournament) {
+            var html = '<div class="tournament-card" onclick="showTournamentDetail(\'' + tournament.id + '\')">';
+            html += '<div class="tournament-header"><div>';
+            html += '<h3>' + tournament.name + '</h3>';
+            html += '<span class="status-badge ' + tournament.status + '">' + tournament.status + '</span>';
+            html += '</div></div>';
+            html += '<div class="tournament-info">';
+            html += '<div class="info-row"><i class="fas fa-calendar"></i><span>' + new Date(tournament.date).toLocaleDateString('ja-JP') + '</span></div>';
+            html += '<div class="info-row"><i class="fas fa-map-marker-alt"></i><span>' + tournament.venue + '</span></div>';
+            html += '<div class="info-row"><i class="fas fa-calendar-times"></i><span>締切: ' + new Date(tournament.deadline).toLocaleDateString('ja-JP') + '</span></div>';
+            html += '<div class="info-row"><i class="fas fa-yen-sign"></i><span>' + tournament.fee + '</span></div>';
+            html += '</div></div>';
+            return html;
+        }).join('');
+    }
+}
+
+function filterTournamentsList() {
+    const statusFilter = document.getElementById('status-filter').value;
+    const searchQuery = document.getElementById('search-input').value.toLowerCase();
+    
+    return AppState.tournaments.filter(function(tournament) {
+        const matchesStatus = statusFilter === 'all' || tournament.status === statusFilter;
+        const matchesSearch = tournament.name.toLowerCase().indexOf(searchQuery) !== -1 || 
+                            tournament.venue.toLowerCase().indexOf(searchQuery) !== -1;
+        return matchesStatus && matchesSearch;
+    });
+}
+
+function showTournamentDetail(id) {
+    const tournament = AppState.tournaments.find(function(t) {
+        return t.id === id;
+    });
+
+    if (!tournament) return;
+    
+    const modalName = document.getElementById('modal-tournament-name');
+    if (modalName) {
+        modalName.textContent = tournament.name;
+    }
+
+    const detailsContainer = document.getElementById('modal-tournament-details');
+    if (detailsContainer) {
+        var html = '';
+        html += '<div class="detail-item"><i class="fas fa-calendar"></i><div class="detail-item-content"><h4>開催日時</h4><p>' + new Date(tournament.date).toLocaleDateString('ja-JP') + ' ' + tournament.time + '〜</p></div></div>';
+        html += '<div class="detail-item"><i class="fas fa-map-marker-alt"></i><div class="detail-item-content"><h4>会場</h4><p>' + tournament.venue + '</p></div></div>';
+        html += '<div class="detail-item"><i class="fas fa-yen-sign"></i><div class="detail-item-content"><h4>参加費</h4><p>' + tournament.fee + '</p></div></div>';
+        html += '<div class="detail-item"><i class="fas fa-calendar-times"></i><div class="detail-item-content"><h4>申込締切</h4><p>' + new Date(tournament.deadline).toLocaleDateString('ja-JP') + '</p></div></div>';
+        html += '<div class="detail-item"><i class="fas fa-list-ul"></i><div class="detail-item-content"><h4>カテゴリー</h4><p>' + tournament.categories.join(', ') + '</p></div></div>';
+        if (tournament.description) {
+            html += '<div class="detail-item"><i class="fas fa-align-left"></i><div class="detail-item-content"><h4>概要</h4><p>' + tournament.description + '</p></div></div>';
+        }
+        detailsContainer.innerHTML = html;
+    }
+    
+    const modal = document.getElementById('tournament-modal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+function closeModal() {
+    const modal = document.getElementById('tournament-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// 設定
+function loadSettings() {
+    const stored = localStorage.getItem('ttlab_settings');
+    if (stored) {
+        try {
+            var settings = JSON.parse(stored);
+            AppState.settings = settings;
+        } catch (e) {
+            console.error('Failed to load settings:', e);
+        }
+    }
+}
+
+function loadSettingsToForm() {
+    const emailInput = document.getElementById('settings-email');
+    if (emailInput) {
+        emailInput.value = AppState.settings.emailAddress;
+    }
+
+    const sigInput = document.getElementById('settings-signature');
+    if (sigInput) {
+        sigInput.value = AppState.settings.emailSignature;
+    }
+}
+
+function saveSettings() {
+    AppState.settings = {
+        emailAddress: document.getElementById('settings-email').value,
+        emailSignature: document.getElementById('settings-signature').value
+    };
+    
+    localStorage.setItem('ttlab_settings', JSON.stringify(AppState.settings));
+    showToast('success', '設定保存完了', '設定を保存しました');
+}
+
+function clearAllData() {
+    if (confirm('すべての大会データを削除します。本当によろしいですか？')) {
+        AppState.tournaments = [];
+        localStorage.removeItem('ttlab_tournaments');
+        renderTournaments();
+        showToast('success', 'データクリア完了', 'すべてのデータを削除しました');
+    }
+}
+
+// ユーティリティ
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+            console.log('Copied');
+        }).catch(function(err) {
+            console.error('Failed:', err);
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        console.log('Copied using fallback');
+    } catch (err) {
+        console.error('Fallback failed:', err);
+    }
+    document.body.removeChild(textarea);
+}
+
+function showToast(type, title, message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    
+    const icon = type === 'success' ? 'check-circle' : 'info-circle';
+    
+    toast.innerHTML = '<i class="fas fa-' + icon + '"></i><div class="toast-content"><p>' + title + '</p><span>' + message + '</span></div>';
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(function() {
+        document.body.removeChild(toast);
+    }, 3000);
+}
+
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        var v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+console.log('✅ システム準備完了');
+    </script>
 </body>
 </html>
