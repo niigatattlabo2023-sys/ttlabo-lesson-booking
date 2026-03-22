@@ -394,6 +394,21 @@ tr:hover td{background:#f5f8ff}
               <input type="url" id="t_pdf_url" placeholder="https://drive.google.com/...">
               <small style="color:#888">Google Driveにアップロードしたファイルの共有URLを貼り付けてください</small>
             </div>
+            <!-- 帯同選択 -->
+            <div class="form-group" style="margin-top:16px;padding:16px;background:#f0f8ff;border-radius:8px">
+              <label style="font-size:.95rem;font-weight:600;color:#1a3a5c;margin-bottom:10px;display:block">🚗 小林の帯同</label>
+              <div style="display:flex;gap:16px;align-items:center">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="radio" name="t_accompany" value="yes" id="t_accompany_yes" style="width:auto">
+                  <span style="font-size:.9rem">帯同する</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="radio" name="t_accompany" value="no" id="t_accompany_no" checked style="width:auto">
+                  <span style="font-size:.9rem">帯同しない</span>
+                </label>
+              </div>
+              <small style="color:#666;margin-top:8px;display:block">※「帯同する」を選択すると、大会当日がGoogleカレンダーに終日予定として登録され、レッスン予約がブロックされます</small>
+            </div>
             <button class="btn btn-blue" onclick="generateForm()">📝 STEP 3へ進む（Googleフォーム生成）</button>
           </div>
         </div>
@@ -425,12 +440,20 @@ tr:hover td{background:#f5f8ff}
         
         <!-- STEP 4: LINE案内文 & カレンダー登録 -->
         <div class="card" id="tour_line_card" style="display:none">
-          <div class="card-title">💬 STEP 4: LINE案内文</div>
+          <div class="card-title">💬 STEP 4: LINE案内文 & カレンダー登録</div>
           <div class="line-box" id="tour_line_text"></div>
           <button class="copy-btn" onclick="copyText('tour_line_text')">📋 コピー</button>
-          <div style="margin-top:20px">
-            <button class="btn btn-blue" onclick="addTournamentToCalendar()">📅 Googleカレンダーに締切タスクを追加</button>
-            <button class="btn btn-primary" onclick="saveTournament()" style="margin-left:10px">💾 大会情報を保存して完了</button>
+          <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eee">
+            <h4 style="font-size:.95rem;font-weight:600;margin-bottom:12px">📅 カレンダー登録</h4>
+            <button class="btn btn-blue" onclick="addTournamentToCalendar()">📌 締切タスクをカレンダーに追加（締切5日前）</button>
+            <div id="tour_accompany_section" style="display:none;margin-top:16px;padding:14px;background:#fff9e6;border-radius:8px">
+              <p style="font-size:.9rem;margin-bottom:10px">🚗 <strong>帯同する</strong>が選択されています</p>
+              <button class="btn btn-primary" onclick="addTournamentDayBlock()">🗓️ 大会当日を終日ブロックに追加（レッスン予約を防止）</button>
+              <small style="display:block;color:#666;margin-top:8px">※カレンダーに終日予定が追加され、お客様のレッスン予約画面でもブロックされます</small>
+            </div>
+          </div>
+          <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eee">
+            <button class="btn btn-primary" onclick="saveTournament()" style="width:100%;font-size:1rem;padding:14px">💾 大会情報を保存して完了</button>
           </div>
         </div>
         
@@ -464,8 +487,11 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const GOOGLE_CLIENT_ID  = '279588794018-s0o2gh9rk2mkl8lhjldon7bn5o41pl6h.apps.googleusercontent.com';
 const GOOGLE_MAPS_KEY   = 'AIzaSyC0zJZzsFmJtXSZJqHXbq_P0NvMxA0bFMk';
-// Gemini API Key
-const GEMINI_API_KEY = 'AIzaSyBlISb31sqKvXd_xmh6szy_AqPM4DLiruk';
+// Gemini API Key（環境変数から取得）
+// Vercel の Environment Variables で GEMINI_API_KEY を設定してください
+const GEMINI_API_KEY = typeof window !== 'undefined' && window.ENV?.GEMINI_API_KEY 
+  ? window.ENV.GEMINI_API_KEY 
+  : 'PLEASE_SET_IN_VERCEL_ENV'; // プレースホルダー（本番では環境変数を使用）
 
 let gCalToken = null;
 let facilitiesList = [];
@@ -1331,12 +1357,12 @@ async function analyzeTournament() {
 
     console.log('🚀 Sending request to Gemini API...');
     
-    // 2026年3月時点の最新モデルリスト（優先順位順）
+    // 2026年3月時点の利用可能なモデルリスト（優先順位順）
     const models = [
-      {name: 'gemini-3.1-pro-preview', endpoint: 'v1beta', description: '最新モデル（2026年2月リリース、100MBファイル対応）'},
-      {name: 'gemini-2.5-flash', endpoint: 'v1', description: '高速安定版'},
-      {name: 'gemini-1.5-pro-latest', endpoint: 'v1beta', description: '1.5系最新版'},
-      {name: 'gemini-1.5-flash', endpoint: 'v1', description: '軽量版（フォールバック用）'}
+      {name: 'gemini-1.5-pro', endpoint: 'v1beta', description: '高精度版（推奨）'},
+      {name: 'gemini-1.5-flash-002', endpoint: 'v1beta', description: '高速版（最新）'},
+      {name: 'gemini-1.5-flash', endpoint: 'v1beta', description: '軽量版（フォールバック）'},
+      {name: 'gemini-pro', endpoint: 'v1', description: '旧安定版'}
     ];
     
     let result = null;
@@ -1504,6 +1530,9 @@ function generateLINE() {
   tourData.gform_url = document.getElementById('tour_gform_url').value;
   tourData.sheet_url = document.getElementById('tour_sheet_url').value;
   
+  // 帯同選択を取得
+  tourData.accompany = document.querySelector('input[name="t_accompany"]:checked').value;
+  
   // 締切日の5日前を計算
   const realDeadline = new Date(tourData.deadline);
   const formDeadline = new Date(realDeadline);
@@ -1515,6 +1544,14 @@ ${tourData.gform_url || 'https://forms.gle/xxxxx'}`;
   
   document.getElementById('tour_line_text').textContent = lineText;
   document.getElementById('tour_line_card').style.display = 'block';
+  
+  // 帯同する場合、専用セクションを表示
+  if (tourData.accompany === 'yes') {
+    document.getElementById('tour_accompany_section').style.display = 'block';
+  } else {
+    document.getElementById('tour_accompany_section').style.display = 'none';
+  }
+  
   showMsg('tour_msg', 'LINE案内文を生成しました。', 'success');
 }
 
@@ -1553,6 +1590,66 @@ function addTournamentToCalendar() {
   });
 }
 
+// 大会当日を終日ブロックに追加（帯同する場合）
+async function addTournamentDayBlock() {
+  if (!gCalToken) {
+    alert('Googleカレンダー連携が必要です。右上の「Gカレンダー連携」ボタンを押してください。');
+    return;
+  }
+  
+  if (!tourData.date || !tourData.name) {
+    showMsg('tour_msg', '大会情報が不足しています。', 'error');
+    return;
+  }
+  
+  const eventDate = tourData.date; // YYYY-MM-DD形式
+  
+  try {
+    // 1. blocked_timesテーブルに終日ブロックを追加（レッスン予約をブロック）
+    const {error: dbError} = await db.from('blocked_times').insert([{
+      block_date: eventDate,
+      start_time: '00:00:00',
+      end_time: '23:59:00',
+      facility_id: null,
+      facility_name: '全施設共通',
+      memo: `【大会帯同】${tourData.name}`
+    }]);
+    
+    if (dbError) {
+      showMsg('tour_msg', 'ブロック追加エラー: ' + dbError.message, 'error');
+      return;
+    }
+    
+    // 2. Googleカレンダーに終日予定を追加
+    const calBody = {
+      summary: `【大会帯同】${tourData.name}`,
+      description: `会場: ${tourData.venue}\n開始時刻: ${tourData.time}\n\n※この日はレッスン予約がブロックされます`,
+      location: tourData.venue,
+      start: {date: eventDate},
+      end: {date: eventDate},
+      reminders: {useDefault: false, overrides: [{method: 'popup', minutes: 1440}]} // 1日前に通知
+    };
+    
+    const calRes = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {'Authorization': 'Bearer ' + gCalToken, 'Content-Type': 'application/json'},
+      body: JSON.stringify(calBody)
+    });
+    
+    const calEv = await calRes.json();
+    
+    if (calEv.id) {
+      showMsg('tour_msg', `✅ 大会当日（${new Date(eventDate).toLocaleDateString('ja-JP')}）を終日ブロックに追加しました。\nGoogleカレンダーにも反映され、お客様のレッスン予約画面でもブロックされます。`, 'success');
+      await loadBlocks(); // ブロック一覧を更新
+    } else {
+      showMsg('tour_msg', 'カレンダー追加に失敗: ' + (calEv.error?.message || '不明なエラー'), 'error');
+    }
+  } catch (e) {
+    console.error('大会当日ブロック追加エラー:', e);
+    showMsg('tour_msg', 'エラー: ' + e.message, 'error');
+  }
+}
+
 async function saveTournament() {
   // 締切日の5日前を計算
   const realDeadline = new Date(tourData.deadline);
@@ -1572,6 +1669,7 @@ async function saveTournament() {
     pdf_url: tourData.pdf_url,
     gform_url: tourData.gform_url || '',
     sheet_url: tourData.sheet_url || '',
+    accompany: tourData.accompany || 'no', // 帯同選択を保存
     created_at: new Date().toISOString()
   };
   
@@ -1605,11 +1703,16 @@ async function loadTournaments() {
     return;
   }
   
-  let html = '<table><thead><tr><th>大会名</th><th>開催日</th><th>フォーム締切</th><th>操作</th></tr></thead><tbody>';
+  let html = '<table><thead><tr><th>大会名</th><th>開催日</th><th>帯同</th><th>フォーム締切</th><th>操作</th></tr></thead><tbody>';
   data.forEach(t => {
+    const accompanyBadge = t.accompany === 'yes' 
+      ? '<span style="display:inline-block;background:#4caf50;color:#fff;font-size:.7rem;padding:2px 6px;border-radius:4px;font-weight:600">🚗 帯同</span>' 
+      : '<span style="display:inline-block;background:#e0e0e0;color:#666;font-size:.7rem;padding:2px 6px;border-radius:4px">-</span>';
+    
     html += `<tr>
       <td>${t.name}</td>
       <td>${new Date(t.event_date).toLocaleDateString('ja-JP')}</td>
+      <td>${accompanyBadge}</td>
       <td>${new Date(t.form_deadline).toLocaleDateString('ja-JP')}</td>
       <td>
         ${t.gform_url ? `<a href="${t.gform_url}" target="_blank" class="btn" style="font-size:.75rem;padding:4px 8px">📝 フォーム</a>` : ''}
