@@ -356,6 +356,7 @@ const DEFAULT_FACILITIES = []; // Supabaseから読み込む（フォールバ�
 let facilities = [];
 let reservations = [];
 let blockedTimes = [];
+let recurringBlocks = [];
 
 // 選択状態
 const sel = {
@@ -383,12 +384,14 @@ async function init() {
   }
 
   // 予約・ブロック時間読み込み
-  const [resRes, blkRes] = await Promise.all([
+  const [resRes, blkRes, recRes] = await Promise.all([
     db.from('lesson_requests').select('lesson_date,start_time,end_time,facility_id,status').eq('status','approved'),
-    db.from('blocked_times').select('*')
+    db.from('blocked_times').select('*'),
+    db.from('recurring_blocks').select('*')
   ]);
   reservations = resRes.data || [];
   blockedTimes = blkRes.data || [];
+  recurringBlocks = recRes.data || [];
 
   renderFacilities('A');
   renderCalendar('A');
@@ -528,14 +531,67 @@ function renderSlots(p) {
   }
 }
 
+function getWeekdayNthOccurrence(year, month, weekday, nth) {
+  // その月の第nth曜日(weekday)の日付を返す
+  let count = 0;
+  for (let d = 1; d <= 31; d++) {
+    const date = new Date(year, month, d);
+    if (date.getMonth() !== month) break;
+    if (date.getDay() === weekday) {
+      count++;
+      if (count === nth) return date;
+    }
+  }
+  return null;
+}
+
+function isRecurringBlock(dateStr, h, m, fac) {
+  const date = new Date(dateStr);
+  const dow = date.getDay();   // 0=日〜6=土
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const t = h*60+m;
+
+  for (const rb of recurringBlocks) {
+    // 施設フィルタ
+    if (fac && rb.facility_id && rb.facility_id !== fac.id) continue;
+    // 期間チェック
+    if (rb.start_date && dateStr < rb.start_date) continue;
+    if (rb.end_date   && dateStr > rb.end_date)   continue;
+
+    let dayMatch = false;
+    if (rb.recurrence_type === 'weekly') {
+      dayMatch = (parseInt(rb.recurrence_day) === dow);
+    } else if (rb.recurrence_type === 'monthly') {
+      const nth = parseInt(rb.week_of_month) || 1;
+      const targetDate = getWeekdayNthOccurrence(year, month, parseInt(rb.recurrence_day), nth);
+      if (targetDate) {
+        const targetStr = targetDate.toISOString().slice(0,10);
+        dayMatch = (targetStr === dateStr);
+      }
+    }
+    if (!dayMatch) continue;
+
+    // 時間帯チェック
+    const [bh,bm] = rb.start_time.split(':').map(Number);
+    const [eh,em] = rb.end_time.split(':').map(Number);
+    if (t >= bh*60+bm && t < eh*60+em) return true;
+  }
+  return false;
+}
+
 function isSlotBusy(dateStr, h, m, fac) {
   const t = h*60+m;
+  // 通常ブロック
   const blocked = blockedTimes.filter(b => b.block_date === dateStr && (!fac || !b.facility_id || b.facility_id === fac.id));
   if (blocked.some(b => {
     const [bh,bm] = b.start_time.split(':').map(Number);
     const [eh,em] = b.end_time.split(':').map(Number);
     return t >= bh*60+bm && t < eh*60+em;
   })) return true;
+  // 定期ブロック
+  if (isRecurringBlock(dateStr, h, m, fac)) return true;
+  // 承認済み予約
   const res = reservations.filter(r => r.lesson_date === dateStr && (!fac || !r.facility_id || r.facility_id === fac.id));
   return res.some(r => {
     const [rh,rm] = r.start_time.split(':').map(Number);

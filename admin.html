@@ -350,117 +350,12 @@ tr:hover td{background:#f5f8ff}
         </div>
       </div>
 
-      <!-- 大会案内管理 -->
+      <!-- 大会案内ツール（このパネルは通常開かず外部リンクで開く） -->
       <div class="panel" id="panel-tournament">
-        <div id="tour_msg"></div>
-        
-        <!-- STEP 1: ファイルアップロード -->
         <div class="card">
-          <div class="card-title">📤 STEP 1: 大会要項・申込書をアップロード</div>
-          <p style="font-size:.88rem;color:#666;margin-bottom:14px">大会要項PDFと申込書（PDF/Excel等）をアップロードしてください。AIが自動で情報を抽出します。</p>
-          <div class="form-group">
-            <label>🏆 大会要項PDF</label>
-            <input type="file" id="tour_file1" accept=".pdf,.doc,.docx,.xls,.xlsx" onchange="handleTournamentFile(1)">
-            <div id="tour_file1_info" style="margin-top:6px;font-size:.8rem;color:#2e7d32;display:none"></div>
-          </div>
-          <div class="form-group">
-            <label>📝 申込書（PDF/Excel/Word）</label>
-            <input type="file" id="tour_file2" accept=".pdf,.doc,.docx,.xls,.xlsx" onchange="handleTournamentFile(2)">
-            <div id="tour_file2_info" style="margin-top:6px;font-size:.8rem;color:#2e7d32;display:none"></div>
-          </div>
-          <button class="btn btn-primary" id="tour_analyze_btn" onclick="analyzeTournament()" disabled>🤖 AI解析を開始</button>
-        </div>
-        
-        <!-- STEP 2: AI解析結果 -->
-        <div class="card" id="tour_result_card" style="display:none">
-          <div class="card-title">✅ STEP 2: AI解析結果を確認・編集</div>
-          <div id="tour_loading" style="text-align:center;padding:30px;display:none">
-            <div style="font-size:2rem;margin-bottom:10px">🤖</div>
-            <div style="font-size:.9rem;color:#888">AI解析中...</div>
-          </div>
-          <div id="tour_form" style="display:none">
-            <div class="form-grid">
-              <div class="form-group"><label>大会名 *</label><input type="text" id="t_name" required></div>
-              <div class="form-group"><label>開催日 *</label><input type="date" id="t_date" required></div>
-              <div class="form-group"><label>開催時刻</label><input type="time" id="t_time" value="09:00"></div>
-              <div class="form-group"><label>会場 *</label><input type="text" id="t_venue" required></div>
-              <div class="form-group"><label>参加費</label><input type="text" id="t_fee" placeholder="例: 1,000円"></div>
-              <div class="form-group"><label>実際の申込締切日 *</label><input type="date" id="t_deadline" required></div>
-            </div>
-            <div class="form-group"><label>種目（カンマ区切り）</label><input type="text" id="t_categories" placeholder="例: 個人戦,団体戦,ダブルス"></div>
-            <div class="form-group"><label>大会概要</label><textarea id="t_description" rows="3"></textarea></div>
-            <div class="form-group">
-              <label>大会要項PDFリンク（Google Drive等）</label>
-              <input type="url" id="t_pdf_url" placeholder="https://drive.google.com/...">
-              <small style="color:#888">Google Driveにアップロードしたファイルの共有URLを貼り付けてください</small>
-            </div>
-            <!-- 帯同選択 -->
-            <div class="form-group" style="margin-top:16px;padding:16px;background:#f0f8ff;border-radius:8px">
-              <label style="font-size:.95rem;font-weight:600;color:#1a3a5c;margin-bottom:10px;display:block">🚗 小林の帯同</label>
-              <div style="display:flex;gap:16px;align-items:center">
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                  <input type="radio" name="t_accompany" value="yes" id="t_accompany_yes" style="width:auto">
-                  <span style="font-size:.9rem">帯同する</span>
-                </label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                  <input type="radio" name="t_accompany" value="no" id="t_accompany_no" checked style="width:auto">
-                  <span style="font-size:.9rem">帯同しない</span>
-                </label>
-              </div>
-              <small style="color:#666;margin-top:8px;display:block">※「帯同する」を選択すると、大会当日がGoogleカレンダーに終日予定として登録され、レッスン予約がブロックされます</small>
-            </div>
-            <button class="btn btn-blue" onclick="generateForm()">📝 STEP 3へ進む（Googleフォーム生成）</button>
-          </div>
-        </div>
-        
-        <!-- STEP 3: Googleフォーム生成 -->
-        <div class="card" id="tour_form_card" style="display:none">
-          <div class="card-title">📝 STEP 3: Googleフォーム作成</div>
-          <div class="form-group">
-            <label>フォーム説明文（コピーして Google Forms に貼り付け）</label>
-            <textarea id="tour_form_desc" rows="8" readonly style="background:#f5f8ff"></textarea>
-            <button class="copy-btn" onclick="copyText('tour_form_desc')" style="margin-top:8px">📋 コピー</button>
-          </div>
-          <div class="form-group" style="margin-top:16px">
-            <label>質問項目（コピーして Google Forms に追加）</label>
-            <div id="tour_form_questions" style="background:#f5f8ff;padding:12px;border-radius:8px;font-size:.85rem;line-height:1.8;white-space:pre-wrap"></div>
-            <button class="copy-btn" onclick="copyText('tour_form_questions')" style="margin-top:8px">📋 コピー</button>
-          </div>
-          <div class="form-group" style="margin-top:16px">
-            <label>作成したGoogleフォームのURL</label>
-            <input type="url" id="tour_gform_url" placeholder="https://forms.gle/...">
-          </div>
-          <div class="form-group">
-            <label>回答用スプレッドシートのURL</label>
-            <input type="url" id="tour_sheet_url" placeholder="https://docs.google.com/spreadsheets/...">
-            <small style="color:#888">フォームの「回答」タブ→「スプレッドシートで表示」からURLを取得</small>
-          </div>
-          <button class="btn btn-blue" onclick="generateLINE()">💬 STEP 4へ進む（LINE案内文生成）</button>
-        </div>
-        
-        <!-- STEP 4: LINE案内文 & カレンダー登録 -->
-        <div class="card" id="tour_line_card" style="display:none">
-          <div class="card-title">💬 STEP 4: LINE案内文 & カレンダー登録</div>
-          <div class="line-box" id="tour_line_text"></div>
-          <button class="copy-btn" onclick="copyText('tour_line_text')">📋 コピー</button>
-          <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eee">
-            <h4 style="font-size:.95rem;font-weight:600;margin-bottom:12px">📅 カレンダー登録</h4>
-            <button class="btn btn-blue" onclick="addTournamentToCalendar()">📌 締切タスクをカレンダーに追加（締切5日前）</button>
-            <div id="tour_accompany_section" style="display:none;margin-top:16px;padding:14px;background:#fff9e6;border-radius:8px">
-              <p style="font-size:.9rem;margin-bottom:10px">🚗 <strong>帯同する</strong>が選択されています</p>
-              <button class="btn btn-primary" onclick="addTournamentDayBlock()">🗓️ 大会当日を終日ブロックに追加（レッスン予約を防止）</button>
-              <small style="display:block;color:#666;margin-top:8px">※カレンダーに終日予定が追加され、お客様のレッスン予約画面でもブロックされます</small>
-            </div>
-          </div>
-          <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eee">
-            <button class="btn btn-primary" onclick="saveTournament()" style="width:100%;font-size:1rem;padding:14px">💾 大会情報を保存して完了</button>
-          </div>
-        </div>
-        
-        <!-- 保存済み大会一覧 -->
-        <div class="card">
-          <div class="card-title">📋 保存済み大会一覧</div>
-          <div id="tour_list">読み込み中...</div>
+          <div class="card-title">🏆 大会案内ツール</div>
+          <a class="tournament-link" id="tournament_link" href="#" target="_blank">🏆 新潟卓球ラボ 大会案内ツールを開く</a>
+          <p style="font-size:.82rem;color:#888;margin-top:12px;text-align:center">別タブで大会案内ツールが開きます</p>
         </div>
       </div>
 
@@ -487,11 +382,8 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const GOOGLE_CLIENT_ID  = '279588794018-s0o2gh9rk2mkl8lhjldon7bn5o41pl6h.apps.googleusercontent.com';
 const GOOGLE_MAPS_KEY   = 'AIzaSyC0zJZzsFmJtXSZJqHXbq_P0NvMxA0bFMk';
-// Gemini API Key（環境変数から取得）
-// Vercel の Environment Variables で GEMINI_API_KEY を設定してください
-const GEMINI_API_KEY = typeof window !== 'undefined' && window.ENV?.GEMINI_API_KEY 
-  ? window.ENV.GEMINI_API_KEY 
-  : 'PLEASE_SET_IN_VERCEL_ENV'; // プレースホルダー（本番では環境変数を使用）
+// 大会案内ツールURL（あとで差し替え可能）
+const TOURNAMENT_URL = 'https://www.genspark.ai/agents?id=tournament-tool';
 
 let gCalToken = null;
 let facilitiesList = [];
@@ -607,12 +499,12 @@ async function doLogout() {
 // アプリ初期化
 // ============================================================
 async function initApp() {
+  document.getElementById('tournament_link').href = TOURNAMENT_URL;
   await loadFacilities();
   await loadStats();
   await loadReservations();
   await loadBlocks();
   await loadRecurring();
-  await loadTournaments(); // 大会一覧を読み込み
   populateFacilitySelects();
   // Realtime監視開始
   startRealtimeWatch();
@@ -800,6 +692,9 @@ async function deleteRes(id) {
 // LINEメッセージ
 // ============================================================
 function generateLine(r) {
+  const lineEl = document.getElementById('line_text');
+  const cardEl = document.getElementById('line_card');
+  if (!lineEl || !cardEl) { console.warn('line_text/line_card要素が見つかりません'); return; }
   const catLabel = r.category === 'junior' ? 'ジュニア' : '社会人';
   const msg = `【予約確定】新潟卓球ラボ
 
@@ -812,12 +707,14 @@ function generateLine(r) {
 💴 料金: ¥${(r.price||0).toLocaleString()}（施設利用料別途）
 
 ご予約ありがとうございます！`;
-  document.getElementById('line_text').textContent = msg;
-  document.getElementById('line_card').style.display = '';
+  lineEl.textContent = msg;
+  cardEl.style.display = '';
 }
 
 function copyLine() {
-  const txt = document.getElementById('line_text').textContent;
+  const el = document.getElementById('line_text');
+  if (!el) return;
+  const txt = el.textContent;
   navigator.clipboard.writeText(txt).then(() => alert('コピーしました！'));
 }
 
@@ -1003,13 +900,25 @@ async function addRecurring() {
     // 開始日の当該曜日を求めて最初のイベントを登録
     const firstDate = getFirstOccurrence(sdate, type, insertData.recurrence_day, insertData.week_of_month);
     if (firstDate) {
+      const DOW_CODE = ['SU','MO','TU','WE','TH','FR','SA'];
+      let rrule = '';
+      if (type === 'weekly') {
+        rrule = 'RRULE:FREQ=WEEKLY;BYDAY=' + DOW_CODE[insertData.recurrence_day];
+      } else {
+        // 毎月第N回目のX曜日
+        const nthPrefix = insertData.week_of_month;
+        rrule = 'RRULE:FREQ=MONTHLY;BYDAY=' + nthPrefix + DOW_CODE[insertData.recurrence_day];
+      }
+      const edate = document.getElementById('r_edate').value;
+      if (edate) rrule += ';UNTIL=' + edate.replace(/-/g,'') + 'T000000Z';
       await createGCalEventBlock({
         title:    `【定期】${title}（${typeLabel}）`,
         date:     firstDate,
         start_time: start+':00',
         end_time:   end+':00',
         location:   facName,
-        description: `定期: ${typeLabel}\n施設: ${facName}\n期間: ${sdate}〜${document.getElementById('r_edate').value||'無期限'}`
+        description: `定期: ${typeLabel}\n施設: ${facName}\n期間: ${sdate}〜${edate||'無期限'}`,
+        rrule
       });
     }
   }
@@ -1059,8 +968,12 @@ function connectGCal() {
 
 async function createGCalEvent(r) {
   if (!gCalToken) { console.warn('Gcal未連携のためスキップ'); return null; }
-  const startDT = r.lesson_date + 'T' + r.start_time.slice(0,8);
-  const endDT   = r.lesson_date + 'T' + r.end_time.slice(0,8);
+  if (!r.lesson_date || !r.start_time || !r.end_time) {
+    console.warn('createGCalEvent: 必須フィールドが不足しています', {lesson_date: r.lesson_date, start_time: r.start_time, end_time: r.end_time});
+    return null;
+  }
+  const startDT = r.lesson_date + 'T' + (r.start_time||'00:00').slice(0,8);
+  const endDT   = r.lesson_date + 'T' + (r.end_time||'01:00').slice(0,8);
   const catLabel = r.category === 'junior' ? 'ジュニア' : '社会人';
   const body = {
     summary:  `【TTラボ】${r.applicant_name}様 レッスン（${catLabel}${r.participants}名）`,
@@ -1133,24 +1046,26 @@ function startRealtimeWatch() {
 }
 
 // ブロック・定期イベントをGoogleカレンダーに追加
-async function createGCalEventBlock({title, date, start_time, end_time, location, description}) {
+async function createGCalEventBlock({title, date, start_time, end_time, location, description, rrule}) {
   if (!gCalToken) return;
   const startDT = date + 'T' + start_time.slice(0,8);
   const endDT   = date + 'T' + end_time.slice(0,8);
   try {
+    const body = {
+      summary:     title,
+      location:    location || '',
+      description: description || '',
+      start: {dateTime: startDT, timeZone: 'Asia/Tokyo'},
+      end:   {dateTime: endDT,   timeZone: 'Asia/Tokyo'},
+      reminders: {useDefault:false, overrides:[
+        {method:'popup', minutes:120}
+      ]}
+    };
+    if (rrule) body.recurrence = [rrule];
     const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
       method: 'POST',
       headers: {'Authorization':'Bearer '+gCalToken, 'Content-Type':'application/json'},
-      body: JSON.stringify({
-        summary:     title,
-        location:    location || '',
-        description: description || '',
-        start: {dateTime: startDT, timeZone: 'Asia/Tokyo'},
-        end:   {dateTime: endDT,   timeZone: 'Asia/Tokyo'},
-        reminders: {useDefault:false, overrides:[
-          {method:'popup', minutes:120}
-        ]}
-      })
+      body: JSON.stringify(body)
     });
     const ev = await res.json();
     if (ev.error?.code === 401) {
@@ -1238,528 +1153,6 @@ db.auth.getSession().then(({data:{session}}) => {
     initApp();
   }
 });
-
-// ============================================================
-// 大会案内管理
-// ============================================================
-let tourFiles = {file1: null, file2: null};
-let tourData = {};
-
-function openTournamentTool() {
-  showPanel('tournament');
-}
-
-// ファイルをBase64エンコードする関数
-async function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      // Data URLから "data:image/png;base64," などのプレフィックスを除去
-      const base64 = reader.result.split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function handleTournamentFile(num) {
-  const input = document.getElementById(`tour_file${num}`);
-  const info = document.getElementById(`tour_file${num}_info`);
-  const file = input.files[0];
-  if (file) {
-    tourFiles[`file${num}`] = file;
-    info.textContent = `✅ ${file.name}`;
-    info.style.display = 'block';
-  }
-  // 両方アップロードされたらボタン有効化
-  if (tourFiles.file1 && tourFiles.file2) {
-    document.getElementById('tour_analyze_btn').disabled = false;
-  }
-}
-
-async function analyzeTournament() {
-  document.getElementById('tour_result_card').style.display = 'block';
-  document.getElementById('tour_loading').style.display = 'block';
-  document.getElementById('tour_form').style.display = 'none';
-  
-  try {
-    // ファイルをBase64エンコード
-    const file1Base64 = await fileToBase64(tourFiles.file1);
-    const file2Base64 = await fileToBase64(tourFiles.file2);
-    
-    // ファイル情報をログ出力
-    console.log('📁 File1:', {
-      name: tourFiles.file1.name,
-      type: tourFiles.file1.type,
-      size: tourFiles.file1.size
-    });
-    console.log('📁 File2:', {
-      name: tourFiles.file2.name,
-      type: tourFiles.file2.type,
-      size: tourFiles.file2.size
-    });
-    
-    // MIME typeを明示的に設定（Excelの場合）
-    const getMimeType = (file) => {
-      if (file.name.endsWith('.xlsx')) {
-        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      } else if (file.name.endsWith('.xls')) {
-        return 'application/vnd.ms-excel';
-      } else if (file.name.endsWith('.pdf')) {
-        return 'application/pdf';
-      } else if (file.name.endsWith('.docx')) {
-        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      } else if (file.name.endsWith('.doc')) {
-        return 'application/msword';
-      }
-      return file.type || 'application/octet-stream';
-    };
-    
-    const mime1 = getMimeType(tourFiles.file1);
-    const mime2 = getMimeType(tourFiles.file2);
-    
-    console.log('🔍 MIME Types:', {mime1, mime2});
-    
-    // Gemini API にリクエスト
-    const prompt = `以下の2つのファイルから、卓球大会の情報を正確に抽出してJSON形式で返してください。
-
-【重要】
-- ファイルに記載されている情報を正確に読み取ってください
-- 推測や例示データではなく、実際のファイル内容から抽出してください
-- 大会名、日付、会場などは必ずファイル内の記載通りに抽出してください
-
-【抽出する情報】
-- name: 大会名（ファイルに記載されている正確な大会名）
-- date: 開催日（YYYY-MM-DD形式）
-- time: 開始時刻（HH:MM形式、記載がない場合は "09:00"）
-- venue: 会場名（正確な会場名を記載）
-- fee: 参加費（例: 個人: 700円 / 団体: 1チーム 4,000円）
-- deadline: 申込締切日（YYYY-MM-DD形式）
-- categories: 種目（カンマ区切り、例: 個人戦,団体戦）
-- description: 大会概要（簡潔に200文字以内）
-
-【出力形式】
-必ずJSON形式で、以下のように返してください：
-{
-  "name": "ファイルから抽出した正確な大会名",
-  "date": "2026-05-02",
-  "time": "09:00",
-  "venue": "ファイルから抽出した正確な会場名",
-  "fee": "参加費",
-  "deadline": "2026-04-25",
-  "categories": "種目1,種目2",
-  "description": "大会概要"
-}
-
-ファイル1（大会要項）: ${tourFiles.file1.name}
-ファイル2（申込書）: ${tourFiles.file2.name}`;
-
-    console.log('🚀 Sending request to Gemini API...');
-    
-    // 2026年3月時点の利用可能なモデルリスト（優先順位順）
-    const models = [
-      {name: 'gemini-1.5-pro', endpoint: 'v1beta', description: '高精度版（推奨）'},
-      {name: 'gemini-1.5-flash-002', endpoint: 'v1beta', description: '高速版（最新）'},
-      {name: 'gemini-1.5-flash', endpoint: 'v1beta', description: '軽量版（フォールバック）'},
-      {name: 'gemini-pro', endpoint: 'v1', description: '旧安定版'}
-    ];
-    
-    let result = null;
-    let lastError = null;
-    
-    // 各モデルを順番に試す
-    for (const model of models) {
-      try {
-        const apiUrl = `https://generativelanguage.googleapis.com/${model.endpoint}/models/${model.name}:generateContent?key=${GEMINI_API_KEY}`;
-        console.log(`📡 Trying: ${model.name} - ${model.description}`);
-        
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                {text: prompt},
-                {inline_data: {mime_type: mime1, data: file1Base64}},
-                {inline_data: {mime_type: mime2, data: file2Base64}}
-              ]
-            }]
-          })
-        });
-        
-        console.log(`📡 Response status (${model.name}):`, response.status);
-        
-        result = await response.json();
-        
-        // エラーがなければ成功
-        if (!result.error) {
-          console.log(`✅ Success with model: ${model.name}`);
-          console.log('📥 API Response:', result);
-          break;
-        } else {
-          console.warn(`⚠️ Model ${model.name} returned error:`, result.error);
-          lastError = result.error;
-        }
-      } catch (error) {
-        console.warn(`⚠️ Model ${model.name} failed:`, error.message);
-        lastError = error;
-      }
-    }
-    
-    // すべてのモデルが失敗した場合
-    if (!result || result.error) {
-      throw new Error(lastError?.message || result?.error?.message || 'すべてのモデルで失敗しました');
-    }
-    
-    if (result.error) {
-      throw new Error(result.error.message || 'Gemini API エラー');
-    }
-    
-    // レスポンスからテキストを取得
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // JSONを抽出（```json ... ``` の場合も対応）
-    let jsonText = text.trim();
-    if (jsonText.startsWith('```json')) {
-      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```$/g, '').trim();
-    } else if (jsonText.startsWith('```')) {
-      jsonText = jsonText.replace(/```\n?/g, '').replace(/```$/g, '').trim();
-    }
-    
-    // JSONをパース
-    tourData = JSON.parse(jsonText);
-    tourData.pdf_url = ''; // 後で手動入力
-    
-  } catch (error) {
-    console.error('AI解析エラー:', error);
-    showMsg('tour_msg', 'AI解析に失敗しました: ' + error.message + '\n\nダミーデータを使用します。', 'error');
-    
-    // エラー時はダミーデータを使用
-    tourData = {
-      name: '第5回 沼垂オープン卓球大会（中学生の部）',
-      date: '2026-05-02',
-      time: '09:00',
-      venue: '白根カルチャーセンター',
-      fee: '個人: 700円 / 団体: 1チーム 4,000円',
-      deadline: '2026-04-25',
-      categories: '個人戦,団体戦',
-      description: 'ジュニア選手を対象とした卓球大会です。2年生以下の部・6人の団体戦（小学生も参加可）',
-      pdf_url: ''
-    };
-  }
-  
-  // フォームに反映
-  document.getElementById('t_name').value = tourData.name || '';
-  document.getElementById('t_date').value = tourData.date || '';
-  document.getElementById('t_time').value = tourData.time || '09:00';
-  document.getElementById('t_venue').value = tourData.venue || '';
-  document.getElementById('t_fee').value = tourData.fee || '';
-  document.getElementById('t_deadline').value = tourData.deadline || '';
-  document.getElementById('t_categories').value = tourData.categories || '';
-  document.getElementById('t_description').value = tourData.description || '';
-  
-  document.getElementById('tour_loading').style.display = 'none';
-  document.getElementById('tour_form').style.display = 'block';
-  showMsg('tour_msg', 'AI解析が完了しました。内容を確認・編集してください。', 'success');
-}
-
-// ファイルをBase64エンコードするヘルパー関数
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result.split(',')[1]; // "data:...;base64," を除去
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function generateForm() {
-  // フォームから最新データを取得
-  tourData.name = document.getElementById('t_name').value;
-  tourData.date = document.getElementById('t_date').value;
-  tourData.time = document.getElementById('t_time').value;
-  tourData.venue = document.getElementById('t_venue').value;
-  tourData.fee = document.getElementById('t_fee').value;
-  tourData.deadline = document.getElementById('t_deadline').value;
-  tourData.categories = document.getElementById('t_categories').value;
-  tourData.description = document.getElementById('t_description').value;
-  tourData.pdf_url = document.getElementById('t_pdf_url').value;
-  
-  // 締切日の5日前を計算
-  const realDeadline = new Date(tourData.deadline);
-  const formDeadline = new Date(realDeadline);
-  formDeadline.setDate(formDeadline.getDate() - 5);
-  
-  // フォーム説明文を生成
-  const desc = `〆切: ${formDeadline.toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}
-
-【${tourData.name}】
-
-📅 開催日時: ${new Date(tourData.date).toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})} ${tourData.time}〜
-📍 会場: ${tourData.venue}
-💰 参加費: ${tourData.fee}
-${tourData.description ? '\n' + tourData.description + '\n' : ''}
-📄 大会要項: ${tourData.pdf_url || '（リンクを設定してください）'}
-📊 回答状況: （スプレッドシートURLを下記に入力後、ここに反映されます）`;
-  
-  document.getElementById('tour_form_desc').value = desc;
-  
-  // 質問項目を生成
-  const cats = tourData.categories.split(',').map(c => c.trim()).filter(Boolean);
-  let questions = `質問1: 選手氏名（必須・短文回答）
-質問2: 学年（必須・プルダウン）
-  選択肢: 小学1年, 小学2年, 小学3年, 小学4年, 小学5年, 小学6年, 中学1年, 中学2年, 中学3年
-質問3: 参加種目（必須・プルダウン）
-  選択肢: ${cats.join(', ')}
-質問4: 保護者氏名（必須・短文回答）
-質問5: 緊急連絡先（必須・短文回答）
-質問6: メールアドレス（必須・メールアドレス形式）`;
-  
-  document.getElementById('tour_form_questions').textContent = questions;
-  
-  document.getElementById('tour_form_card').style.display = 'block';
-  showMsg('tour_msg', 'Googleフォーム用の説明文と質問項目を生成しました。', 'success');
-}
-
-function generateLINE() {
-  // 最新のフォームURLを取得
-  tourData.gform_url = document.getElementById('tour_gform_url').value;
-  tourData.sheet_url = document.getElementById('tour_sheet_url').value;
-  
-  // 帯同選択を取得
-  tourData.accompany = document.querySelector('input[name="t_accompany"]:checked').value;
-  
-  // 締切日の5日前を計算
-  const realDeadline = new Date(tourData.deadline);
-  const formDeadline = new Date(realDeadline);
-  formDeadline.setDate(formDeadline.getDate() - 5);
-  
-  // LINE案内文を生成
-  const lineText = `〆切 ${formDeadline.toLocaleDateString('ja-JP', {month: 'long', day: 'numeric'})}（${['日','月','火','水','木','金','土'][formDeadline.getDay()]}）【${tourData.name}】
-${tourData.gform_url || 'https://forms.gle/xxxxx'}`;
-  
-  document.getElementById('tour_line_text').textContent = lineText;
-  document.getElementById('tour_line_card').style.display = 'block';
-  
-  // 帯同する場合、専用セクションを表示
-  if (tourData.accompany === 'yes') {
-    document.getElementById('tour_accompany_section').style.display = 'block';
-  } else {
-    document.getElementById('tour_accompany_section').style.display = 'none';
-  }
-  
-  showMsg('tour_msg', 'LINE案内文を生成しました。', 'success');
-}
-
-function addTournamentToCalendar() {
-  if (!gCalToken) {
-    alert('Googleカレンダー連携が必要です。右上の「Gカレンダー連携」ボタンを押してください。');
-    return;
-  }
-  
-  // 締切日の5日前を計算
-  const realDeadline = new Date(tourData.deadline);
-  const taskDate = new Date(realDeadline);
-  taskDate.setDate(taskDate.getDate() - 5);
-  
-  // Googleカレンダーに終日タスクとして追加
-  const body = {
-    summary: `【締切】${tourData.name} 申込`,
-    description: `大会名: ${tourData.name}\n開催日: ${tourData.date}\n実際の締切: ${tourData.deadline}\n\nGoogleフォーム: ${tourData.gform_url || '未設定'}`,
-    start: {date: taskDate.toISOString().split('T')[0]},
-    end: {date: taskDate.toISOString().split('T')[0]},
-    reminders: {useDefault: false, overrides: [{method: 'email', minutes: 1440}]} // 1日前にメール
-  };
-  
-  fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-    method: 'POST',
-    headers: {'Authorization': 'Bearer ' + gCalToken, 'Content-Type': 'application/json'},
-    body: JSON.stringify(body)
-  }).then(r => r.json()).then(ev => {
-    if (ev.id) {
-      showMsg('tour_msg', `✅ Googleカレンダーに締切タスクを追加しました（${taskDate.toLocaleDateString('ja-JP')}）`, 'success');
-    } else {
-      showMsg('tour_msg', 'カレンダー追加に失敗しました: ' + (ev.error?.message || '不明なエラー'), 'error');
-    }
-  }).catch(e => {
-    showMsg('tour_msg', 'カレンダー追加エラー: ' + e.message, 'error');
-  });
-}
-
-// 大会当日を終日ブロックに追加（帯同する場合）
-async function addTournamentDayBlock() {
-  if (!gCalToken) {
-    alert('Googleカレンダー連携が必要です。右上の「Gカレンダー連携」ボタンを押してください。');
-    return;
-  }
-  
-  if (!tourData.date || !tourData.name) {
-    showMsg('tour_msg', '大会情報が不足しています。', 'error');
-    return;
-  }
-  
-  const eventDate = tourData.date; // YYYY-MM-DD形式
-  
-  try {
-    // 1. blocked_timesテーブルに終日ブロックを追加（レッスン予約をブロック）
-    const {error: dbError} = await db.from('blocked_times').insert([{
-      block_date: eventDate,
-      start_time: '00:00:00',
-      end_time: '23:59:00',
-      facility_id: null,
-      facility_name: '全施設共通',
-      memo: `【大会帯同】${tourData.name}`
-    }]);
-    
-    if (dbError) {
-      showMsg('tour_msg', 'ブロック追加エラー: ' + dbError.message, 'error');
-      return;
-    }
-    
-    // 2. Googleカレンダーに終日予定を追加
-    const calBody = {
-      summary: `【大会帯同】${tourData.name}`,
-      description: `会場: ${tourData.venue}\n開始時刻: ${tourData.time}\n\n※この日はレッスン予約がブロックされます`,
-      location: tourData.venue,
-      start: {date: eventDate},
-      end: {date: eventDate},
-      reminders: {useDefault: false, overrides: [{method: 'popup', minutes: 1440}]} // 1日前に通知
-    };
-    
-    const calRes = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-      method: 'POST',
-      headers: {'Authorization': 'Bearer ' + gCalToken, 'Content-Type': 'application/json'},
-      body: JSON.stringify(calBody)
-    });
-    
-    const calEv = await calRes.json();
-    
-    if (calEv.id) {
-      showMsg('tour_msg', `✅ 大会当日（${new Date(eventDate).toLocaleDateString('ja-JP')}）を終日ブロックに追加しました。\nGoogleカレンダーにも反映され、お客様のレッスン予約画面でもブロックされます。`, 'success');
-      await loadBlocks(); // ブロック一覧を更新
-    } else {
-      showMsg('tour_msg', 'カレンダー追加に失敗: ' + (calEv.error?.message || '不明なエラー'), 'error');
-    }
-  } catch (e) {
-    console.error('大会当日ブロック追加エラー:', e);
-    showMsg('tour_msg', 'エラー: ' + e.message, 'error');
-  }
-}
-
-async function saveTournament() {
-  // 締切日の5日前を計算
-  const realDeadline = new Date(tourData.deadline);
-  const formDeadline = new Date(realDeadline);
-  formDeadline.setDate(formDeadline.getDate() - 5);
-  
-  const record = {
-    name: tourData.name,
-    event_date: tourData.date,
-    event_time: tourData.time,
-    venue: tourData.venue,
-    fee: tourData.fee,
-    real_deadline: tourData.deadline,
-    form_deadline: formDeadline.toISOString().split('T')[0],
-    categories: tourData.categories,
-    description: tourData.description,
-    pdf_url: tourData.pdf_url,
-    gform_url: tourData.gform_url || '',
-    sheet_url: tourData.sheet_url || '',
-    accompany: tourData.accompany || 'no', // 帯同選択を保存
-    created_at: new Date().toISOString()
-  };
-  
-  const {error} = await db.from('tournaments').insert([record]);
-  if (error) {
-    showMsg('tour_msg', 'エラー: ' + error.message, 'error');
-    return;
-  }
-  
-  showMsg('tour_msg', '✅ 大会情報を保存しました！', 'success');
-  await loadTournaments();
-  
-  // フォームをリセット
-  tourFiles = {file1: null, file2: null};
-  tourData = {};
-  document.getElementById('tour_file1').value = '';
-  document.getElementById('tour_file2').value = '';
-  document.getElementById('tour_file1_info').style.display = 'none';
-  document.getElementById('tour_file2_info').style.display = 'none';
-  document.getElementById('tour_analyze_btn').disabled = true;
-  document.getElementById('tour_result_card').style.display = 'none';
-  document.getElementById('tour_form_card').style.display = 'none';
-  document.getElementById('tour_line_card').style.display = 'none';
-}
-
-async function loadTournaments() {
-  const {data} = await db.from('tournaments').select('*').order('created_at', {ascending: false}).limit(20);
-  const el = document.getElementById('tour_list');
-  if (!data || data.length === 0) {
-    el.innerHTML = '<div style="color:#888;padding:10px">保存済みの大会はありません</div>';
-    return;
-  }
-  
-  let html = '<table><thead><tr><th>大会名</th><th>開催日</th><th>帯同</th><th>フォーム締切</th><th>操作</th></tr></thead><tbody>';
-  data.forEach(t => {
-    const accompanyBadge = t.accompany === 'yes' 
-      ? '<span style="display:inline-block;background:#4caf50;color:#fff;font-size:.7rem;padding:2px 6px;border-radius:4px;font-weight:600">🚗 帯同</span>' 
-      : '<span style="display:inline-block;background:#e0e0e0;color:#666;font-size:.7rem;padding:2px 6px;border-radius:4px">-</span>';
-    
-    html += `<tr>
-      <td>${t.name}</td>
-      <td>${new Date(t.event_date).toLocaleDateString('ja-JP')}</td>
-      <td>${accompanyBadge}</td>
-      <td>${new Date(t.form_deadline).toLocaleDateString('ja-JP')}</td>
-      <td>
-        ${t.gform_url ? `<a href="${t.gform_url}" target="_blank" class="btn" style="font-size:.75rem;padding:4px 8px">📝 フォーム</a>` : ''}
-        ${t.sheet_url ? `<a href="${t.sheet_url}" target="_blank" class="btn" style="font-size:.75rem;padding:4px 8px;margin-left:4px">📊 回答</a>` : ''}
-        <button class="btn btn-delete" style="font-size:.75rem;padding:4px 8px;margin-left:4px" onclick="deleteTournament('${t.id}')">削除</button>
-      </td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  el.innerHTML = html;
-}
-
-async function deleteTournament(id) {
-  if (!confirm('この大会を削除しますか？')) return;
-  await db.from('tournaments').delete().eq('id', id);
-  await loadTournaments();
-}
-
-function copyText(elemId) {
-  const el = document.getElementById(elemId);
-  const text = el.value || el.textContent;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      showMsg('tour_msg', '📋 コピーしました', 'success');
-    }).catch(() => {
-      fallbackCopy(text);
-    });
-  } else {
-    fallbackCopy(text);
-  }
-}
-
-function fallbackCopy(text) {
-  const textarea = document.createElement('textarea');
-  textarea.value = text;
-  textarea.style.position = 'fixed';
-  textarea.style.opacity = '0';
-  document.body.appendChild(textarea);
-  textarea.select();
-  try {
-    document.execCommand('copy');
-    showMsg('tour_msg', '📋 コピーしました', 'success');
-  } catch (e) {
-    showMsg('tour_msg', 'コピーに失敗しました', 'error');
-  }
-  document.body.removeChild(textarea);
-}
 </script>
 </body>
 </html>
