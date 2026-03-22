@@ -1262,26 +1262,64 @@ async function analyzeTournament() {
     const file1Base64 = await fileToBase64(tourFiles.file1);
     const file2Base64 = await fileToBase64(tourFiles.file2);
     
+    // ファイル情報をログ出力
+    console.log('📁 File1:', {
+      name: tourFiles.file1.name,
+      type: tourFiles.file1.type,
+      size: tourFiles.file1.size
+    });
+    console.log('📁 File2:', {
+      name: tourFiles.file2.name,
+      type: tourFiles.file2.type,
+      size: tourFiles.file2.size
+    });
+    
+    // MIME typeを明示的に設定（Excelの場合）
+    const getMimeType = (file) => {
+      if (file.name.endsWith('.xlsx')) {
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      } else if (file.name.endsWith('.xls')) {
+        return 'application/vnd.ms-excel';
+      } else if (file.name.endsWith('.pdf')) {
+        return 'application/pdf';
+      } else if (file.name.endsWith('.docx')) {
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      } else if (file.name.endsWith('.doc')) {
+        return 'application/msword';
+      }
+      return file.type || 'application/octet-stream';
+    };
+    
+    const mime1 = getMimeType(tourFiles.file1);
+    const mime2 = getMimeType(tourFiles.file2);
+    
+    console.log('🔍 MIME Types:', {mime1, mime2});
+    
     // Gemini API にリクエスト
-    const prompt = `以下の2つのファイルから、卓球大会の情報を抽出してJSON形式で返してください。
+    const prompt = `以下の2つのファイルから、卓球大会の情報を正確に抽出してJSON形式で返してください。
+
+【重要】
+- ファイルに記載されている情報を正確に読み取ってください
+- 推測や例示データではなく、実際のファイル内容から抽出してください
+- 大会名、日付、会場などは必ずファイル内の記載通りに抽出してください
 
 【抽出する情報】
-- name: 大会名（例: 第5回 沼垂オープン卓球大会（中学生の部））
+- name: 大会名（ファイルに記載されている正確な大会名）
 - date: 開催日（YYYY-MM-DD形式）
-- time: 開始時刻（HH:MM形式）
-- venue: 会場名
+- time: 開始時刻（HH:MM形式、記載がない場合は "09:00"）
+- venue: 会場名（正確な会場名を記載）
 - fee: 参加費（例: 個人: 700円 / 団体: 1チーム 4,000円）
 - deadline: 申込締切日（YYYY-MM-DD形式）
 - categories: 種目（カンマ区切り、例: 個人戦,団体戦）
-- description: 大会概要
+- description: 大会概要（簡潔に200文字以内）
 
 【出力形式】
 必ずJSON形式で、以下のように返してください：
 {
-  "name": "大会名",
+  "name": "ファイルから抽出した正確な大会名",
   "date": "2026-05-02",
   "time": "09:00",
-  "venue": "会場名",
+  "venue": "ファイルから抽出した正確な会場名",
   "fee": "参加費",
   "deadline": "2026-04-25",
   "categories": "種目1,種目2",
@@ -1291,21 +1329,62 @@ async function analyzeTournament() {
 ファイル1（大会要項）: ${tourFiles.file1.name}
 ファイル2（申込書）: ${tourFiles.file2.name}`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            {text: prompt},
-            {inline_data: {mime_type: tourFiles.file1.type, data: file1Base64}},
-            {inline_data: {mime_type: tourFiles.file2.type, data: file2Base64}}
-          ]
-        }]
-      })
-    });
+    console.log('🚀 Sending request to Gemini API...');
     
-    const result = await response.json();
+    // 2026年3月時点の最新モデルリスト（優先順位順）
+    const models = [
+      {name: 'gemini-3.1-pro-preview', endpoint: 'v1beta', description: '最新モデル（2026年2月リリース、100MBファイル対応）'},
+      {name: 'gemini-2.5-flash', endpoint: 'v1', description: '高速安定版'},
+      {name: 'gemini-1.5-pro-latest', endpoint: 'v1beta', description: '1.5系最新版'},
+      {name: 'gemini-1.5-flash', endpoint: 'v1', description: '軽量版（フォールバック用）'}
+    ];
+    
+    let result = null;
+    let lastError = null;
+    
+    // 各モデルを順番に試す
+    for (const model of models) {
+      try {
+        const apiUrl = `https://generativelanguage.googleapis.com/${model.endpoint}/models/${model.name}:generateContent?key=${GEMINI_API_KEY}`;
+        console.log(`📡 Trying: ${model.name} - ${model.description}`);
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                {text: prompt},
+                {inline_data: {mime_type: mime1, data: file1Base64}},
+                {inline_data: {mime_type: mime2, data: file2Base64}}
+              ]
+            }]
+          })
+        });
+        
+        console.log(`📡 Response status (${model.name}):`, response.status);
+        
+        result = await response.json();
+        
+        // エラーがなければ成功
+        if (!result.error) {
+          console.log(`✅ Success with model: ${model.name}`);
+          console.log('📥 API Response:', result);
+          break;
+        } else {
+          console.warn(`⚠️ Model ${model.name} returned error:`, result.error);
+          lastError = result.error;
+        }
+      } catch (error) {
+        console.warn(`⚠️ Model ${model.name} failed:`, error.message);
+        lastError = error;
+      }
+    }
+    
+    // すべてのモデルが失敗した場合
+    if (!result || result.error) {
+      throw new Error(lastError?.message || result?.error?.message || 'すべてのモデルで失敗しました');
+    }
     
     if (result.error) {
       throw new Error(result.error.message || 'Gemini API エラー');
