@@ -464,8 +464,8 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const GOOGLE_CLIENT_ID  = '279588794018-s0o2gh9rk2mkl8lhjldon7bn5o41pl6h.apps.googleusercontent.com';
 const GOOGLE_MAPS_KEY   = 'AIzaSyC0zJZzsFmJtXSZJqHXbq_P0NvMxA0bFMk';
-// Gemini API Key (あとで環境変数化推奨)
-const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE'; // TODO: 実際のAPIキーに置き換え
+// Gemini API Key
+const GEMINI_API_KEY = 'AIzaSyBlISb31sqKvXd_xmh6szy_AqPM4DLiruk';
 
 let gCalToken = null;
 let facilitiesList = [];
@@ -1243,38 +1243,119 @@ async function analyzeTournament() {
   document.getElementById('tour_loading').style.display = 'block';
   document.getElementById('tour_form').style.display = 'none';
   
-  // TODO: 実際のGemini API連携（現在はダミーデータ）
-  // 本番では、ファイルをbase64エンコードしてGemini APIに送信
-  
-  // デモ用：2秒待って固定データを返す
-  await new Promise(r => setTimeout(r, 2000));
-  
-  // ダミーデータ（実際はGemini APIのレスポンスから取得）
-  tourData = {
-    name: '第5回 沼垂オープン卓球大会（中学生の部）',
-    date: '2026-05-02',
-    time: '09:00',
-    venue: '白根カルチャーセンター',
-    fee: '個人: 700円 / 団体: 1チーム 4,000円',
-    deadline: '2026-04-25',
-    categories: '個人戦,団体戦',
-    description: 'ジュニア選手を対象とした卓球大会です。2年生以下の部・6人の団体戦（小学生も参加可）',
-    pdf_url: ''
-  };
+  try {
+    // ファイルをBase64エンコード
+    const file1Base64 = await fileToBase64(tourFiles.file1);
+    const file2Base64 = await fileToBase64(tourFiles.file2);
+    
+    // Gemini API にリクエスト
+    const prompt = `以下の2つのファイルから、卓球大会の情報を抽出してJSON形式で返してください。
+
+【抽出する情報】
+- name: 大会名（例: 第5回 沼垂オープン卓球大会（中学生の部））
+- date: 開催日（YYYY-MM-DD形式）
+- time: 開始時刻（HH:MM形式）
+- venue: 会場名
+- fee: 参加費（例: 個人: 700円 / 団体: 1チーム 4,000円）
+- deadline: 申込締切日（YYYY-MM-DD形式）
+- categories: 種目（カンマ区切り、例: 個人戦,団体戦）
+- description: 大会概要
+
+【出力形式】
+必ずJSON形式で、以下のように返してください：
+{
+  "name": "大会名",
+  "date": "2026-05-02",
+  "time": "09:00",
+  "venue": "会場名",
+  "fee": "参加費",
+  "deadline": "2026-04-25",
+  "categories": "種目1,種目2",
+  "description": "大会概要"
+}
+
+ファイル1（大会要項）: ${tourFiles.file1.name}
+ファイル2（申込書）: ${tourFiles.file2.name}`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {text: prompt},
+            {inline_data: {mime_type: tourFiles.file1.type, data: file1Base64}},
+            {inline_data: {mime_type: tourFiles.file2.type, data: file2Base64}}
+          ]
+        }]
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.error) {
+      throw new Error(result.error.message || 'Gemini API エラー');
+    }
+    
+    // レスポンスからテキストを取得
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // JSONを抽出（```json ... ``` の場合も対応）
+    let jsonText = text.trim();
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```$/g, '').trim();
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/```\n?/g, '').replace(/```$/g, '').trim();
+    }
+    
+    // JSONをパース
+    tourData = JSON.parse(jsonText);
+    tourData.pdf_url = ''; // 後で手動入力
+    
+  } catch (error) {
+    console.error('AI解析エラー:', error);
+    showMsg('tour_msg', 'AI解析に失敗しました: ' + error.message + '\n\nダミーデータを使用します。', 'error');
+    
+    // エラー時はダミーデータを使用
+    tourData = {
+      name: '第5回 沼垂オープン卓球大会（中学生の部）',
+      date: '2026-05-02',
+      time: '09:00',
+      venue: '白根カルチャーセンター',
+      fee: '個人: 700円 / 団体: 1チーム 4,000円',
+      deadline: '2026-04-25',
+      categories: '個人戦,団体戦',
+      description: 'ジュニア選手を対象とした卓球大会です。2年生以下の部・6人の団体戦（小学生も参加可）',
+      pdf_url: ''
+    };
+  }
   
   // フォームに反映
-  document.getElementById('t_name').value = tourData.name;
-  document.getElementById('t_date').value = tourData.date;
-  document.getElementById('t_time').value = tourData.time;
-  document.getElementById('t_venue').value = tourData.venue;
-  document.getElementById('t_fee').value = tourData.fee;
-  document.getElementById('t_deadline').value = tourData.deadline;
-  document.getElementById('t_categories').value = tourData.categories;
-  document.getElementById('t_description').value = tourData.description;
+  document.getElementById('t_name').value = tourData.name || '';
+  document.getElementById('t_date').value = tourData.date || '';
+  document.getElementById('t_time').value = tourData.time || '09:00';
+  document.getElementById('t_venue').value = tourData.venue || '';
+  document.getElementById('t_fee').value = tourData.fee || '';
+  document.getElementById('t_deadline').value = tourData.deadline || '';
+  document.getElementById('t_categories').value = tourData.categories || '';
+  document.getElementById('t_description').value = tourData.description || '';
   
   document.getElementById('tour_loading').style.display = 'none';
   document.getElementById('tour_form').style.display = 'block';
   showMsg('tour_msg', 'AI解析が完了しました。内容を確認・編集してください。', 'success');
+}
+
+// ファイルをBase64エンコードするヘルパー関数
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1]; // "data:...;base64," を除去
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function generateForm() {
